@@ -6,14 +6,15 @@ using namespace std;
 
 sockaddr_in serveraddr;
 int serverfd;
-Client *clients[10];
-int clientnum = 0;
 bool listening = false;
 bool running = false;
 
+Client *clients[10];
+int clientnum = 0;
+
 void ListenClient();
 void Disconnect();
-void read();
+void readdata();
 void DataProcess();
 
 int main() {
@@ -46,16 +47,16 @@ int main() {
         return -1;
     }
 
-    thread listenthread(ListenClient);
     listening = true;
+    thread listenthread(ListenClient);
     listenthread.detach();
-    int listenexit;
+    string listenexit;
     cin >> listenexit;
     listening = false;
     listenthread.~thread();
-    thread readthread(read);
-    readthread.detach();
-
+    thread readthread(readdata);
+    readthread.join();
+    Disconnect();
     close(serverfd);
     return 0;
 }
@@ -108,7 +109,7 @@ void Disconnect() {
     close(serverfd);
 }
 
-void read() {
+void readdata() {
     while (running) {
         for (int i = 0; i < 10; i++) {
             if (clients[i] == NULL)
@@ -120,6 +121,7 @@ void read() {
             if (clients[i]->dataqueue.empty())
                 continue;
             clients[i]->dataqueue.front();
+            clients[i]->dataqueue.pop();
         }
     }
 }
