@@ -1,6 +1,7 @@
 #include "client.hpp"
 #include <cstdlib>
 #include <string>
+#include <sys/wait.h>
 
 using namespace std;
 
@@ -19,6 +20,26 @@ void readdata();
 void DataProcess(string str);
 
 int main() {
+    pid_t pid = 0;
+    int status = 0;
+    cout << "주제를 설정해주세요. (모든 주제는 ALL)" << endl;
+    char theme[10];
+    cin >> theme;
+    char *const exeargv[] = {"python3", "worddbcreate.py", theme, NULL};
+    pid = fork();
+    switch (pid) {
+    case -1:
+        perror("포크 에러");
+        exit(-1);
+    case 0:
+        execvp("python3", exeargv);
+        return 0;
+    }
+
+    if (pid > 0) {
+        wait(&status);
+    }
+
     serverfd = socket(AF_INET, SOCK_STREAM, 0);
     if (serverfd < 0) {
         cout << "소켓을 열 수 없습니다." << endl;
@@ -66,6 +87,9 @@ int main() {
     // readthread.join();
     Disconnect();
     close(serverfd);
+    FILE *clear;
+    clear = fopen(".db", "wt");
+    fclose(clear);
     return 0;
 }
 
