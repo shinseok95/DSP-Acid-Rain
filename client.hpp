@@ -18,14 +18,11 @@ struct Client {
     sockaddr_in addr;
     int fd;
     std::queue<string> dataqueue;
-    thread *readthread;
 
     Client(sockaddr_in _addr, int _fd) {
         addr = _addr;
         fd = _fd;
         clienton = true;
-        readthread = new thread(read);
-        readthread->detach();
     }
 
     void read() {
@@ -40,7 +37,7 @@ struct Client {
                 close(fd);
                 break;
             }
-            dataprocess();
+            dataqueue.push(readbuffer);
         }
     }
 
@@ -51,11 +48,11 @@ struct Client {
 
     void Disconnect() {
         clienton = false;
-        readthread->~thread();
         close(fd);
     }
 
   private:
+    Client() {}
     void dataprocess() {
         switch (readbuffer[0]) {
         case 100:
