@@ -1,7 +1,4 @@
-#include "client.hpp"
-#include <cstdlib>
-#include <string>
-#include <sys/wait.h>
+#include "header.h"
 
 using namespace std;
 
@@ -10,18 +7,26 @@ int serverfd;
 bool listening = false;
 bool running = false;
 
-Client *clients[10];
-thread *clientread[10];
-int clientnum = 0;
+bool clienton[10];
+int clientfd[10];
+sockaddr_in clientaddr[10];
+char readbuffer[10][32];
+char writebuffer[10][32];
+queue<string> dataqueue[10];
 
-void ListenClient();
-void Disconnect();
-void readdata();
-void DataProcess(string str);
+vector<string> words(10000);
+
+void *ListenClient(void *none);
+void ClientDisconnect(int i);
+void Disconnect(void *none);
+void DataProcess();
+void DProcess(string str);
+bool awake = false;
 
 int main() {
     pid_t pid = 0;
     int status = 0;
+    int msqid = msgget(2017610015, IPC_CREAT | 0666);
     cout << "주제를 설정해주세요. (모든 주제는 ALL)" << endl;
     char theme[10];
     cin >> theme;
@@ -36,9 +41,23 @@ int main() {
         return 0;
     }
 
-    if (pid > 0) {
-        wait(&status);
+    message msg;
+    while (true) {
+        memset(&msg, 0, sizeof(msg));
+        msgrcv(msqid, &msg, sizeof(msg) - sizeof(long), 1, 0);
+        string word(msg.str);
+        if (word == "END")
+            break;
+        else
+            words.push_back(word);
+        cout << word << endl;
     }
+    msgctl(msqid, IPC_RMID, NULL);
+    if (words.empty()) {
+        cout << "주제코드가 잘못 되었거나 단어를 불러올 수 없습니다." << endl;
+        return -1;
+    }
+    cout << "불러오기 완료!" << endl;
 
     serverfd = socket(AF_INET, SOCK_STREAM, 0);
     if (serverfd < 0) {
@@ -65,7 +84,7 @@ int main() {
     }
 
     for (int i = 0; i < 10; i++)
-        clients[i] = nullptr;
+        clienton[i] = false;
     cout << "서버가 실행되었습니다. 클라이언트를 기다리는 중입니다." << endl;
     cout << "IP주소:" << inet_ntoa(serveraddr.sin_addr) << endl;
     cout << "포트:" << ntohs(serveraddr.sin_port) << endl;
@@ -76,98 +95,95 @@ int main() {
     }
 
     listening = true;
-    thread listenthread(ListenClient);
-    listenthread.detach();
+    pthread_t listenthread;
+    pthread_create(&listenthread, NULL, ListenClient, NULL);
+    pthread_detach(listenthread);
     string listenexit;
-    cout << "엔터를 눌러서 게임을 시작해주세요" << endl;
+    cout << "아무 문자열이나 입력 후 엔터를 눌러서 게임을 시작해주세요" << endl;
     cin >> listenexit;
     listening = false;
-    listenthread.~thread();
+    pthread_cancel(listenthread);
     //  thread readthread(readdata);
     // readthread.join();
-    Disconnect();
-    close(serverfd);
-    FILE *clear;
-    clear = fopen(".db", "wt");
-    fclose(clear);
     return 0;
 }
 
-void ListenClient() {
+void *ListenClient(void *none) {
     while (listening) {
-        sockaddr_in clientaddr;
-        int clientfd = accept(serverfd, (sockaddr *)&clientaddr,
-                              (socklen_t *)sizeof(clientaddr));
-        if (clientfd < 0) {
+        sockaddr_in addr;
+        int fd = accept(serverfd, (sockaddr *)&addr, (socklen_t *)sizeof(addr));
+        if (fd < 0) {
             cout << "클라이언트 연결 오류" << endl;
             fprintf(stderr, "%s\n", strerror(errno));
-            exit(-1);
         }
 
         int i = 0;
         for (i = 0; i < 10; i++) {
-            if (clients[i] == nullptr)
-                continue;
-            if (!clients[i]->clienton) {
-                clients[i]->Disconnect();
-                // clientread[i]->~thread();
-                // delete clientread[i];
-                delete clients[i];
-                clients[i] = nullptr;
-                continue;
-            }
-        }
-        for (i = 0; i < 10; i++) {
-            if (clients[i] == nullptr)
+            if (!clienton[i])
                 break;
         }
+
         if (i >= 10) {
             cout << "접속 인원 초과" << endl;
-            close(clientfd);
+            close(fd);
             continue;
         }
 
-        clients[i] = new Client(clientaddr, clientfd);
-        // clientread[i] = new thread(clients[i]->read);
-        // clientread[i]->detach();
+        clienton[i] = true;
+        clientfd[i] = fd;
+        clientaddr[i] = addr;
 
         cout << "클라이언트 접속" << endl;
-        cout << "IP주소:" << inet_ntoa(clientaddr.sin_addr) << endl;
-        cout << "포트:" << ntohs(clientaddr.sin_port) << endl;
+        cout << "IP주소:" << inet_ntoa(addr.sin_addr) << endl;
+        cout << "포트:" << ntohs(addr.sin_port) << endl;
     }
 }
 
-void Disconnect() {
+void ClientDisconnect(int i) {
+    clienton[i] = false;
+    close(clientfd[i]);
+}
+
+void Disconnect(void *none) {
     for (int i = 0; i < 10; i++) {
-        if (clients[i] == nullptr)
+        if (!clienton[i])
             continue;
-        clients[i]->Disconnect();
-        // clientread[i]->~thread();
-        // delete clientread[i];
-        delete clients[i];
-        clients[i] = nullptr;
+        ClientDisconnect(i);
     }
     close(serverfd);
 }
 
-void readdata() {
+void ReadData(void *none) {
     while (running) {
         for (int i = 0; i < 10; i++) {
-            if (clients[i] == nullptr)
+            if (!clienton[i])
                 continue;
-            if (!clients[i]->clienton) {
-                clients[i]->Disconnect();
-                // clientread[i]->~thread();
-                // delete clientread[i];
-                delete clients[i];
-                clients[i] = nullptr;
+            int readlen = 0;
+            memset(readbuffer[i], 0, sizeof(readbuffer[i]));
+            readlen = recv(clientfd[i], readbuffer[i], sizeof(readbuffer[i]),
+                           MSG_DONTWAIT | MSG_NOSIGNAL);
+            if (readlen < 0) {
+                cout << "클라이언트 " << inet_ntoa(clientaddr[i].sin_addr)
+                     << "의 연결이 끊어졌습니다." << endl;
+                ClientDisconnect(i);
+                break;
             }
-            if (clients[i]->dataqueue.empty())
-                continue;
-            DataProcess(clients[i]->dataqueue.front());
-            clients[i]->dataqueue.pop();
+            dataqueue[i].push(readbuffer[i]);
         }
     }
 }
 
-void DataProcess(string str) {}
+void DataProcess(void *none) {
+    while (running) {
+        for (int i = 0; i < 10; i++) {
+            if (!clienton[i])
+                continue;
+            if (dataqueue[i].empty())
+                continue;
+            DProcess(dataqueue[i].front());
+            dataqueue[i].pop();
+        }
+    }
+}
+
+void DProcess(string str) {}
