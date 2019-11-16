@@ -39,26 +39,26 @@ class Word {
 
     void setAttackWord(void) {
 
-        ifstream input(".db"); // DB에서 단어 받아오기
-        if (input.fail()) {
-            cout << ".db open fail" << endl;
-            exit(-1);
-        }
+        // ifstream input(".db"); // DB에서 단어 받아오기
+        // if (input.fail()) {
+        //     cout << ".db open fail" << endl;
+        //     exit(-1);
+        // }
 
-        array<string, 1000>
-            tempWord; // 랜덤하게 받기 위해 임시 저장할 array(1000개)
-        string word;
+        // array<string, 1000>
+        //     tempWord; // 랜덤하게 받기 위해 임시 저장할 array(1000개)
+        // string word;
 
-        for (int i = 0; i < 1000; i++) {
-            input >> word;
+        // for (int i = 0; i < 1000; i++) {
+        //     input >> word;
 
-            tempWord[i] = word;
-        }
+        //     tempWord[i] = word;
+        // }
 
-        srand((unsigned int)time(0));
+        // srand((unsigned int)time(0));
 
-        for (int i = 0; i < 1000; i++)
-            attackWord.push_back(tempWord[rand() % 1000]); // attackWord에 저장
+        // for (int i = 0; i < 1000; i++)
+        //     attackWord.push_back(tempWord[rand() % 1000]); // attackWord에 저장
     }
 
     list<string> getServerWord(void) { return serverWord; }
