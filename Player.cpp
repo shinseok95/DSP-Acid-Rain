@@ -39,7 +39,15 @@ class Player {
 
     void setPlaerName(wstring name) { this->name = name; }
     void setPlaerGrade(wstring gradeNum) { this->gradeNum = gradeNum; }
-    void setPlayerHP(int);
+
+    void setPlayerHP(int hp) {
+
+        if ((this->HP + hp) > 100)
+            this->HP = 100;
+        else
+            this->HP += hp;
+    }
+
     wstring getPlayerName(void) { return this->name; }
     wstring getPlayerGrade(void) { return this->gradeNum; }
     int getPlayerHP(void) { return this->HP; }

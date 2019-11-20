@@ -1,0 +1,15 @@
+
+1. g++ main.cpp -c
+
+2. g++ main.o -o Acid-app -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio
+
+3. ./Acid-app
+
+** Acid-app 파일을 여는 경우,
+
+terminate called after throwing an instance of 'std::bad_alloc'
+  what():  std::bad_alloc
+Aborted (core dumped)
+
+라는 오류가 몇 번 발생하는데, 아마 저희가 찾지 못한 메모리 누수가 있어서 이러는 것 같습니다.
+그래도 여러번 ./Acid-app 하시면 게임이 열리니까, 계속 ./Acid-app을 치시면 됩니다.
