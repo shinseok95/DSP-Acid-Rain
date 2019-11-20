@@ -7,13 +7,13 @@ using namespace std;
 class Player {
 
   private:
-    int HP;          // Max: 100, Min:0
-    string name;     //  사용자 이름
-    string gradeNum; //  사용자 학번
-    Word *word;      // player 고유 Word class
+    int HP;           // Max: 100, Min:0
+    wstring name;     //  사용자 이름
+    wstring gradeNum; //  사용자 학번
+    Word *word;       // player 고유 Word class
 
   public:
-    Player(string name, string gradeNum) {
+    Player(wstring name, wstring gradeNum) {
 
         this->name = name;
         this->gradeNum = gradeNum;
@@ -37,21 +37,21 @@ class Player {
 
     /*------- Player Information Function--------*/
 
-    void setPlaerName(string name) { this->name = name; }
-    void setPlaerGrade(string gradeNum) { this->gradeNum = gradeNum; }
+    void setPlaerName(wstring name) { this->name = name; }
+    void setPlaerGrade(wstring gradeNum) { this->gradeNum = gradeNum; }
     void setPlayerHP(int);
-    string getPlayerName(void) { return this->name; }
-    string getPlayerGrade(void) { return this->gradeNum; }
+    wstring getPlayerName(void) { return this->name; }
+    wstring getPlayerGrade(void) { return this->gradeNum; }
     int getPlayerHP(void) { return this->HP; }
 
     /*------- Word Function-------*/
 
-    list<string> getAttackWord(void) { return word->getAttackWord(); }
-    list<string> getServerWord(void) { return word->getServerWord(); }
+    list<wstring> getAttackWord(void) { return word->getAttackWord(); }
+    list<wstring> getServerWord(void) { return word->getServerWord(); }
     void printAttackWord(void) { word->printAttackWord(); }
     void printServerWord(void) { word->printServerWord(); }
-    bool deleteServerWord(string delWord) { word->deleteServerWord(delWord); }
-    bool deleteAttackWord(string delWord) { word->deleteAttackWord(delWord); }
+    bool deleteServerWord(wstring delWord) { word->deleteServerWord(delWord); }
+    bool deleteAttackWord(wstring delWord) { word->deleteAttackWord(delWord); }
 
     ~Player() { delete word; }
 };

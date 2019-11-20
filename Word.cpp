@@ -14,8 +14,8 @@ using namespace std;
 class Word {
 
   private:
-    list<string> serverWord; // 서버에서 받아올 단어
-    list<string> attackWord; // 공격할 단어 1000개
+    list<wstring> serverWord; // 서버에서 받아올 단어
+    list<wstring> attackWord; // 공격할 단어 1000개
 
   public:
     Word() {}
@@ -25,8 +25,10 @@ class Word {
         if (this == &anotherWord)
             return *this;
 
-        list<string>::iterator serverIter = anotherWord.getServerWord().begin();
-        list<string>::iterator attackIter = anotherWord.getAttackWord().begin();
+        list<wstring>::iterator serverIter =
+            anotherWord.getServerWord().begin();
+        list<wstring>::iterator attackIter =
+            anotherWord.getAttackWord().begin();
 
         serverWord.clear();
         attackWord.clear();
@@ -58,29 +60,30 @@ class Word {
         // srand((unsigned int)time(0));
 
         // for (int i = 0; i < 1000; i++)
-        //     attackWord.push_back(tempWord[rand() % 1000]); // attackWord에 저장
+        //     attackWord.push_back(tempWord[rand() % 1000]); // attackWord에
+        //     저장
     }
 
-    list<string> getServerWord(void) { return serverWord; }
-    list<string> getAttackWord(void) { return attackWord; }
+    list<wstring> getServerWord(void) { return serverWord; }
+    list<wstring> getAttackWord(void) { return attackWord; }
 
     void printAttackWord(void) { // attackWord 출력
 
-        list<string>::iterator iter;
+        list<wstring>::iterator iter;
         for (iter = attackWord.begin(); iter != attackWord.end(); iter++)
-            cout << *iter << endl;
+            cout << iter->c_str() << endl;
     }
 
     void printServerWord(void) { // serverWord 출력
 
-        list<string>::iterator iter;
+        list<wstring>::iterator iter;
         for (iter = attackWord.begin(); iter != attackWord.end(); iter++)
-            cout << *iter << endl;
+            cout << iter->c_str() << endl;
     }
 
     bool deleteServerWord(
-        string word) { // 입력받은 단어가 존재하는 경우 삭제하고 ture 반환
-        list<string>::iterator iter;
+        wstring word) { // 입력받은 단어가 존재하는 경우 삭제하고 ture 반환
+        list<wstring>::iterator iter;
 
         for (iter = serverWord.begin(); iter != serverWord.end(); iter++) {
             if (*iter == word) {
@@ -89,13 +92,13 @@ class Word {
             } else
                 continue;
         }
-
+        // wstring a = L"가나";
         return false;
     }
 
     bool deleteAttackWord(
-        string word) { // 입력받은 단어가 존재하는 경우 삭제하고 ture 반환
-        list<string>::iterator iter;
+        wstring word) { // 입력받은 단어가 존재하는 경우 삭제하고 ture 반환
+        list<wstring>::iterator iter;
 
         for (iter = attackWord.begin(); iter != attackWord.end(); iter++) {
             if (*iter == word) {
