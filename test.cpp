@@ -9,12 +9,14 @@
 #include <sys/types.h>
 using namespace std;
 
-struct message {
-    long type;
-    char ch[100];
-};
-
 int main() {
-    printf("%d\n%d\n%d\n", sizeof("각"), sizeof("가나"), sizeof("as"));
+    wstring str=L"asdf";
+    printf("%d\n%d\n",L'a',str[0]);
+    wcout<<str[0]<<endl;
+    wcout<<L'a'<<endl;
+    if(str[0] == L'a')
+    {
+        wcout<<L"true"<<endl;
+    }
     return 0;
 }

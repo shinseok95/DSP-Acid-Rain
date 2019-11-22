@@ -10,17 +10,21 @@ bool running = false;
 bool clienton[10];
 int clientfd[10];
 sockaddr_in clientaddr[10];
-char readbuffer[10][32];
-char writebuffer[10][32];
-queue<string> dataqueue[10];
+wchar_t readbuffer[10][32];
+wchar_t writebuffer[10][32];
+queue<wstring> dataqueue[10];
+pthread_t readthread[10];
 
-vector<string> words(10000);
+vector<wstring> words;
+int wordlen;
+random_device rd;
+mt19937 mt;
 
 void *ListenClient(void *none);
 void ClientDisconnect(int i);
-void Disconnect(void *none);
-void DataProcess();
-void DProcess(string str);
+void Disconnect(void* none);
+void* Read(void* index);
+void* DataProcess(void* none);
 bool awake = false;
 
 int main() {
@@ -30,7 +34,7 @@ int main() {
     cout << "주제를 설정해주세요. (모든 주제는 ALL)" << endl;
     char theme[10];
     cin >> theme;
-    char *const exeargv[] = {"python3", "worddbcreate.py", theme, NULL};
+    char *const exeargv[] = {"python", "worddbcreate.py", theme, NULL};
     pid = fork();
     switch (pid) {
     case -1:
@@ -45,12 +49,14 @@ int main() {
     while (true) {
         memset(&msg, 0, sizeof(msg));
         msgrcv(msqid, &msg, sizeof(msg) - sizeof(long), 1, 0);
-        string word(msg.str);
-        if (word == "END")
+        string temp(msg.str);
+        wstring word;
+        word.assign(temp.begin(),temp.end());
+        if (word == L"END")
             break;
         else
             words.push_back(word);
-        cout << word << endl;
+        wcout << words.back() << endl;
     }
     msgctl(msqid, IPC_RMID, NULL);
     if (words.empty()) {
@@ -58,6 +64,8 @@ int main() {
         return -1;
     }
     cout << "불러오기 완료!" << endl;
+    wordlen = words.size();
+    mt.seed(rd());
 
     serverfd = socket(AF_INET, SOCK_STREAM, 0);
     if (serverfd < 0) {
@@ -75,7 +83,7 @@ int main() {
     }
 
     serveraddr.sin_family = AF_INET;
-    serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    serveraddr.sin_addr.s_addr = inet_addr("127.0.0.1");
     serveraddr.sin_port = htons(7777);
     if (bind(serverfd, (sockaddr *)&serveraddr, sizeof(serveraddr)) < 0) {
         cout << "바인딩 에러" << endl;
@@ -103,18 +111,24 @@ int main() {
     cin >> listenexit;
     listening = false;
     pthread_cancel(listenthread);
-    //  thread readthread(readdata);
-    // readthread.join();
+    pthread_t mainthread;
+    pthread_create(&mainthread,NULL,DataProcess,NULL);
+    int* state;
+    running=true;
+    pthread_join(mainthread, (void**)&state);
+    Disconnect(NULL);
     return 0;
 }
 
 void *ListenClient(void *none) {
     while (listening) {
         sockaddr_in addr;
-        int fd = accept(serverfd, (sockaddr *)&addr, (socklen_t *)sizeof(addr));
+        socklen_t addsize = sizeof(addr);
+        int fd = accept(serverfd, (sockaddr *)&addr, &addsize);
         if (fd < 0) {
             cout << "클라이언트 연결 오류" << endl;
             fprintf(stderr, "%s\n", strerror(errno));
+            continue;
         }
 
         int i = 0;
@@ -132,6 +146,8 @@ void *ListenClient(void *none) {
         clienton[i] = true;
         clientfd[i] = fd;
         clientaddr[i] = addr;
+        pthread_create(&readthread[i],NULL,Read,&i);
+        pthread_detach(readthread[i]);
 
         cout << "클라이언트 접속" << endl;
         cout << "IP주소:" << inet_ntoa(addr.sin_addr) << endl;
@@ -140,6 +156,7 @@ void *ListenClient(void *none) {
 }
 
 void ClientDisconnect(int i) {
+    pthread_cancel(readthread[i]);
     clienton[i] = false;
     close(clientfd[i]);
 }
@@ -153,37 +170,42 @@ void Disconnect(void *none) {
     close(serverfd);
 }
 
-void ReadData(void *none) {
-    while (running) {
-        for (int i = 0; i < 10; i++) {
-            if (!clienton[i])
-                continue;
-            int readlen = 0;
-            memset(readbuffer[i], 0, sizeof(readbuffer[i]));
-            readlen = recv(clientfd[i], readbuffer[i], sizeof(readbuffer[i]),
-                           MSG_DONTWAIT | MSG_NOSIGNAL);
-            if (readlen < 0) {
-                cout << "클라이언트 " << inet_ntoa(clientaddr[i].sin_addr)
-                     << "의 연결이 끊어졌습니다." << endl;
-                ClientDisconnect(i);
-                break;
-            }
-            dataqueue[i].push(readbuffer[i]);
+void* Read(void* index)
+{
+    int i=*((int*)index);
+    while(clienton[i])
+    {
+        int readlen = 0;
+        memset(readbuffer[i], 0, sizeof(readbuffer[i]));
+        readlen = recv(clientfd[i], readbuffer[i], sizeof(readbuffer[i]), 0);
+        if (readlen <= 0) {
+            cout << "클라이언트 " << inet_ntoa(clientaddr[i].sin_addr) << "의 연결이 끊어졌습니다." << endl;
+            ClientDisconnect(i);
+            pthread_exit(NULL);
         }
+        dataqueue[i].push(readbuffer[i]);
     }
 }
 
-void DataProcess(void *none) {
+void* DataProcess(void *none) {
     while (running) {
         for (int i = 0; i < 10; i++) {
             if (!clienton[i])
                 continue;
             if (dataqueue[i].empty())
                 continue;
-            DProcess(dataqueue[i].front());
+            wstring str = dataqueue[i].front();
             dataqueue[i].pop();
+            switch (str[0]) {
+            case 'H':
+               break;
+            case 'A':
+            break;
+            case 'T':
+                int idx = mt() % wordlen;
+                wcout<<words[idx]<<endl;
+                break;
+            }
         }
     }
 }
-
-void DProcess(string str) {}
