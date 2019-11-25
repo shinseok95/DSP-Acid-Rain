@@ -14,7 +14,6 @@ using namespace std;
 
 class Game {
   private:
-    list<Text> temlist;    // 디펜스 단어 임시 리스트
     list<Text> temAtklist; // 공격할 단어 임시 리스트
     list<wstring> serverword; // 서버로부터 받아온 디펜스 단어 리스트
     list<wstring> attackword; // 서버로부터 받아온 공격할 단어 리스트
@@ -83,27 +82,16 @@ void Game::setAttackWord(wstring word) { attackword.push_back(word); }
 
 /*-------------------tlist 단어 관련 함수-----------------------------*/
 
-void Game::severAtk() { //임시 단어 리스트 관리
-
-    srand((unsigned int)time(NULL));
-
-    while (temlist.size() != 10) { // 임시 단어 리스트 개수 < 10 (temlist < 10)
-
-        int randomX = rand() % 900; // x좌표 랜덤 지정
-
-        Text newtext = Text(serverword.front(), font, 30);
-        newtext.setPosition((float)randomX, 0.f);
-        setWordColor(newtext, randomX);
-
-        serverword.pop_front();     // serverword의 단어를 빼서 (pop)
-        temlist.push_back(newtext); // temlist에 삽입 (push)
-    }
-}
-
 void Game::addWord() { // 떨어지고 있는 단어 리스트 추가
+    srand((unsigned int)time(NULL));
+    int randomX = rand() % 900; // x좌표 랜덤 지정
 
-    tlist.push_back(temlist.front());
-    temlist.pop_front();
+    Text newtext = Text(serverword.front(), font, 30);
+    newtext.setPosition((float)randomX, 0.f);
+    setWordColor(newtext, randomX);
+
+    serverword.pop_front();   // serverword의 단어를 빼서 (pop)
+    tlist.push_back(newtext); // temlist에 삽입 (push)
 }
 
 /*---------------------alist 단어 관련 함수----------------------------*/
