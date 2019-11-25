@@ -1,6 +1,12 @@
 #include "Game.cpp"
 #include <SFML/Audio.hpp>
+#include <pthread.h>
+
+pthread_t readthread;
+
 int main() {
+
+
 
     size_t level = 4; // 단어 내려오는 속도 조절
     Clock clock;
