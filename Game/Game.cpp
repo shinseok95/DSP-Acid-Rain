@@ -49,6 +49,9 @@ class Game {
     void setServerWord(wstring word);
     void setAttackWord(wstring word);
 
+    void setServerWord(wstring word);
+    void setAttackWord(wstring word);
+
     void setResultImage(Texture &texture, Sprite &sprite, bool result);
     void severAtk();
     void update(Time elapsed, Game &game, size_t level);

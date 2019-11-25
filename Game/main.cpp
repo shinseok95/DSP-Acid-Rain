@@ -129,6 +129,13 @@ int main() {
             game.sendAtkWord.pop();
         }
 
+        /*-------- sendAtkWord(queue)에 단어가 존재하는 경우 -----------*/
+
+        if (!game.sendAtkWord.empty()) {
+            Write(L'A' + game.sendAtkWord.front()); // 서버로 전송
+            game.sendAtkWord.pop();
+        }
+
         /*HP 갱신*/
         HPbar.setPoint(
             0, sf::Vector2f(1150, 720 - game.getPlayer().getPlayerHP() * 3));
