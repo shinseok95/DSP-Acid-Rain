@@ -18,18 +18,19 @@ class Game {
     list<wstring> serverword; // 서버에서 받아온 단어 리스트 (string)
     list<wstring> attackword; // 공격할 단어 리스트
     Font font;
-    Text text; // 저장될 단어
-    Text typing;
+    Text text;   // 저장될 단어
+    Text typing; // 타이핑 받을 단어
     Player *player;
 
   public:
-    std::wstring TEXTBOX; // 입력받을 단어 임시저장
+    wstring TEXTBOX; // 입력받을 단어 임시저장
 
     Game(wstring, wstring);
     ~Game();
 
     Text getText() { return text; }
     Player &getPlayer() { return *this->player; }
+
     void setWordColor(Text &text, int randomX);
     void setShape(Texture &texture, Sprite &sprite, Vertex *line1,
                   Vertex *line2, Vertex *line3, Vertex *HPtop, Vertex *HPmiddle,
@@ -48,8 +49,8 @@ class Game {
 
     void attackWord();
 
-    list<Text> tlist; //떨어지고 있는 리스트
-    list<Text> alist; // 공격할 단어
+    list<Text> tlist; //떨어지고 있는 단어 리스트
+    list<Text> alist; // 공격할 단어 리스트
     list<Text>::iterator tlistIter;
 };
 
@@ -57,9 +58,8 @@ class Game {
 
 Game::Game(wstring name, wstring gradNum) {
     player = new Player(name, gradNum);
+
     font.loadFromFile("Nanum.ttf");
-    // text.setPosition(10,20);
-    // list<string> serverword = player->getServerWord();
     typing.setFont(font);
     typing.setFillColor(sf::Color::White);
     typing.setCharacterSize(30);
@@ -106,21 +106,22 @@ Game::Game(wstring name, wstring gradNum) {
 
 void Game::severAtk() { //임시 단어 리스트 관리
 
-    // list<string>::iterator svIter = serverword.begin();
     srand((unsigned int)time(NULL));
+
     while (temlist.size() != 10) { // 임시 단어들 리스트의 갯수가 10개 미만이면
-                                   // x좌표 랜덤 지정해서 넣는다.
-        int randomX = rand() % 900;
-        // cout << randomX << serverword.front().c_str() << endl;
+
+        int randomX = rand() % 900; // x좌표 랜덤 지정
+
         Text newtext = Text(serverword.front(), font, 30);
-        serverword.pop_front();
-        newtext.setPosition((float)randomX, 0.f);
+        newtext.setPosition((float)randomX, 0.f); // 단어 위치 지정
         setWordColor(newtext, randomX);
-        temlist.push_back(newtext);
+
+        serverword.pop_front();     // serverword 에서 templist로 이동(1))
+        temlist.push_back(newtext); // serverword 에서 templist로 이동(2))
     }
 }
 
-void Game::addWord() { // tlist 추가
+void Game::addWord() { // 떨어지고 있는 단어 리스트 추가( templist > tlist )
     tlist.push_back(temlist.front());
     temlist.pop_front();
 }
@@ -128,7 +129,8 @@ void Game::addWord() { // tlist 추가
 /*-----------------------------------------alist 단어 관련
  * 함수----------------------------------------------*/
 
-void Game::addAtackWord() { // alist size가 0이 되면 추가
+void Game::addAtackWord() { // 공격할 단어 개수가 0이 되면 단어 추가
+                            // (if(alist의 size ==0))
 
     for (int i = 0; i < 5; i++) {
 
@@ -144,11 +146,14 @@ void Game::attackWord() {
     while (temAtklist.size() < 5) { // temAtklist에 Text 5개 채움
 
         Text newtext = Text(attackword.front(), font, 27);
-        attackword.pop_front();
+
         newtext.setPosition(1105, 50 + ypos);
         newtext.setFillColor(sf::Color::Magenta);
-        temAtklist.push_back(newtext);
-        ypos += 55;
+
+        attackword.pop_front(); // attackword 에서 temAtklist로 이동(1))
+        temAtklist.push_back(newtext); // attackword 에서 temAtklist로 이동(2))
+
+        ypos += 55; // 공격할 단어 y 좌표 설정
     }
 }
 
@@ -157,45 +162,43 @@ void Game::attackWord() {
 
 void Game::update(Time elapsed, Text t, size_t level) {
 
+    // serverword 관련 update
+
     for (tlistIter = tlist.begin(); tlistIter != tlist.end(); ++tlistIter) {
 
-        if (t.getString() == (*tlistIter).getString()) { // tlist와 typing 비교
+        if (t.getString() ==
+            (*tlistIter).getString()) { // 떨어지고 있는 단어와 타이핑 단어가
+                                        // 동일하다면 (tlist == typing)
             tlist.erase(tlistIter++);
-            player->setPlayerHP(HP_PLUS_VALUE); // 동일시 HP 3 증가
-            cout << player->getPlayerHP() << endl;
+            player->setPlayerHP(HP_PLUS_VALUE); // HP 3 +
         }
 
-        if (tlistIter->getPosition().y > 580) {
+        if (tlistIter->getPosition().y >
+            580) { // 떨어지고 있는 단어가 바닥에 닿는다면
             ++tlistIter;
-            tlist.pop_front();
+            tlist.pop_front(); // 바닥에 닿은 단어 삭제
 
-            player->setPlayerHP(
-                -HP_MINUS_VALUE); // 단어가 바닥에 닿는 경우 HP -10
-
-            cout << player->getPlayerHP() << endl;
-        } else {
-            tlistIter->move(0, elapsed.asSeconds() * 20 * level);
+            player->setPlayerHP(-HP_MINUS_VALUE); //  HP 10 -
         }
+
+        else
+            tlistIter->move(0, elapsed.asSeconds() * 20 *
+                                   level); // 떨어지는 속도 조절()
     }
 
-    for (tlistIter = alist.begin();
-         tlistIter != alist.end(); // typing 과 attack word 비교
-         ++tlistIter) {
+    // attackword 관련 update
+
+    for (tlistIter = alist.begin(); tlistIter != alist.end(); ++tlistIter) {
 
         if (t.getString() ==
-            (*tlistIter).getString()) { // true면 alist에서 삭제
+            (*tlistIter).getString()) { // 공격할 단어와 타이핑 단어가
+                                        // 동일하다면 ( alist == typing )
 
-            alist.erase(tlistIter++);
+            alist.erase(tlistIter++); // 공격할 단어 삭제
 
             /* 서버로 attack word를 전송해야함*/
         }
     }
-
-    // text.setString("hello");
-    // text.setFont(font);
-    // text.setCharacterSize(30);
-    // text.setFillColor(sf::Color::Black);
-    // text.move(0,elapsed.asSeconds()*50);
 }
 
 /*--------------------------------------Typing 관련
