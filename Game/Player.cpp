@@ -13,10 +13,7 @@ class Player {
     Word *word;       // player 고유 Word class
 
   public:
-    Player(wstring name, wstring gradeNum) {
-
-        this->name = name;
-        this->gradeNum = gradeNum;
+    Player() {
         HP = 100;
         word = new Word();
         word->setAttackWord();
