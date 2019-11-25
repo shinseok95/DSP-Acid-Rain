@@ -177,7 +177,7 @@ void Disconnect(void *none) {
 void Write(wstring str, int i)
 {
     pthread_mutex_lock(&writemutex[i]);
-        int sendlen = send(clientfd[i], str.data(), str.size(), 0);
+        int sendlen = send(clientfd[i], str.data(), str.size(), MSG_NOSIGNAL);
         if (sendlen < 0) {
             cout << "클라이언트 " << inet_ntoa(clientaddr[i].sin_addr) << "의 연결이 끊어졌습니다." << endl;
             pthread_mutex_unlock(&writemutex[i]);
@@ -194,7 +194,7 @@ void* Read(void* index)
     {
         int readlen = 0;
         memset(readbuffer[i], 0, sizeof(readbuffer[i]));
-        readlen = recv(clientfd[i], readbuffer[i], sizeof(readbuffer[i]), 0);
+        readlen = recv(clientfd[i], readbuffer[i], sizeof(readbuffer[i]), MSG_NOSIGNAL);
         if (readlen < 0) {
             cout << "클라이언트 " << inet_ntoa(clientaddr[i].sin_addr) << "의 연결이 끊어졌습니다." << endl;
             ClientDisconnect(i);
@@ -205,6 +205,10 @@ void* Read(void* index)
 }
 
 void* DataProcess(void *none) {
+    int timestep=5000;
+    long totaltime=0;
+    timeval pre, now;
+    gettimeofday(&pre,NULL);
     while (running) {
         for (int i = 0; i < 10; i++) {
             if (!clienton[i])
@@ -213,16 +217,43 @@ void* DataProcess(void *none) {
                 continue;
             wstring str = dataqueue[i].front();
             dataqueue[i].pop();
-            switch (str[0]) {
-            case 'H':
-               break;
+            wchar_t tag=str[0];
+            str=str.substr(1,str.size()-1);
+            switch (tag) {
             case 'A':
-            break;
-            case 'T':
                 int idx = mt() % wordlen;
-                wcout<<words[idx]<<endl;
+                Write(L'A'+words[idx],i);
+                int target;
+                do
+                {
+                    target=mt()%10;
+                } while (!clienton[target]);
+                Write(L'R'+str,target);
+            break;
+            case 'D':
+                cout<<"클라이언트 "<<
                 break;
             }
+        }
+        gettimeofday(&now,NULL);
+        long second,usecond;
+        second=abs(now.tv_sec-pre.tv_sec);
+        usecond=now.tv_usec-pre.tv_usec;
+        int mtime=(second*1000+usecond/1000.0)+0.5;
+        if(mtime>=timestep)
+        {
+            int idx = mt() % wordlen;
+            wcout<<words[idx]<<endl;
+            for(int i=0;i<10;i++)
+            {
+                if(!clienton[i])
+                    continue;
+                Write(L'R' + words[idx],i);
+            }
+            totaltime+=mtime;
+            pre=now;
+            if(totaltime>=20000)
+                timestep-=timestep/10;
         }
     }
 }
