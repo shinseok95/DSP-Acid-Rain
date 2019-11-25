@@ -16,7 +16,7 @@ int main() {
     wcout<<L'a'<<endl;
     if(str[0] == L'a')
     {
-        wcout<<L"true"<<endl;
+        wcout<<(L"true" + str).data()<<endl;
     }
     return 0;
 }

@@ -12,8 +12,14 @@ int main() {
         return -1;
     }
 
+    running =true;
     pthread_create(&readthread, NULL, Read, NULL);
     pthread_detach(readthread);
+
+    while(wait)
+    {
+
+    }
 
     size_t level = 4; // 단어 내려오는 속도 조절
     Clock clock;
@@ -63,6 +69,12 @@ int main() {
                   below, HPshape, HPbar, HPtitle, HPtopvalue, HPmidvalue,
                   typing, attack);
 
+    for(int i=0;i<10;i++)
+        game.severAtk();
+
+    for(int i=0;i<5;i++)
+        game.attackWord();
+        
     while (window.isOpen()) { // 창 열림
         Event event;
 

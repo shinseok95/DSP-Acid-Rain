@@ -13,7 +13,9 @@
 #include <sys/msg.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <sys/time.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <vector>
 #include <random>
+#define _BSD_SOURCE

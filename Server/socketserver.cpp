@@ -111,6 +111,35 @@ int main() {
     string listenexit;
     cout << "아무 문자열이나 입력 후 엔터를 눌러서 게임을 시작해주세요" << endl;
     cin >> listenexit;
+    for(int j=0;j<10;j++)
+    {
+            int idx = mt() % wordlen;
+            wcout<<words[idx]<<endl;
+            for(int i=0;i<10;i++)
+            {
+                if(!clienton[i])
+                    continue;
+                Write(L'R' + words[idx],i);
+            }
+    }
+    for(int j=0;j<10;j++)
+    {
+            int idx = mt() % wordlen;
+            wcout<<words[idx]<<endl;
+            for(int i=0;i<10;i++)
+            {
+                if(!clienton[i])
+                    continue;
+                Write(L'A' + words[idx],i);
+            }
+    }
+
+    for(int i=0;i<10;i++)
+    {
+        if(!clienton[i])
+            continue;
+        Write(L"S ",i);
+    }
     listening = false;
     pthread_cancel(listenthread);
     pthread_t mainthread;
@@ -176,8 +205,9 @@ void Disconnect(void *none) {
 
 void Write(wstring str, int i)
 {
-    pthread_mutex_lock(&writemutex[i]);
-        int sendlen = send(clientfd[i], str.data(), str.size(), MSG_NOSIGNAL);
+        pthread_mutex_lock(&writemutex[i]);
+        const wchar_t* writebuffer=str.data();
+        int sendlen = send(clientfd[i], writebuffer, sizeof(writebuffer), MSG_NOSIGNAL);
         if (sendlen < 0) {
             cout << "클라이언트 " << inet_ntoa(clientaddr[i].sin_addr) << "의 연결이 끊어졌습니다." << endl;
             pthread_mutex_unlock(&writemutex[i]);
@@ -200,6 +230,8 @@ void* Read(void* index)
             ClientDisconnect(i);
             pthread_exit(NULL);
         }
+        if(wcslen(readbuffer[i])==0)
+            continue;
         dataqueue[i].push(readbuffer[i]);
     }
 }
@@ -217,10 +249,8 @@ void* DataProcess(void *none) {
                 continue;
             wstring str = dataqueue[i].front();
             dataqueue[i].pop();
-            wchar_t tag=str[0];
-            str=str.substr(1,str.size()-1);
-            switch (tag) {
-            case 'A':
+            switch (str[0]) {
+            case L'A':
                 int idx = mt() % wordlen;
                 Write(L'A'+words[idx],i);
                 int target;
@@ -228,11 +258,9 @@ void* DataProcess(void *none) {
                 {
                     target=mt()%10;
                 } while (!clienton[target]);
-                Write(L'R'+str,target);
+                str[0]=L'R';
+                Write(str,target);
             break;
-            case 'D':
-                cout<<"클라이언트 "<<
-                break;
             }
         }
         gettimeofday(&now,NULL);
