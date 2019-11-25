@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <list>
+#include <queue>
 
 using namespace sf;
 using namespace std;
@@ -41,6 +42,9 @@ class Game {
     void setTyping(wstring t);
     Text getTyping();
 
+    void setServerWord(wstring word);
+    void setAttackWord(wstring word);
+
     void setResultImage(Texture &texture, Sprite &sprite, bool result);
     void severAtk();
     void update(Time elapsed, Text t, size_t level);
@@ -49,8 +53,9 @@ class Game {
 
     void attackWord();
 
-    list<Text> tlist; // 떨어지고 있는 단어 리스트
-    list<Text> alist; // 공격할 단어 리스트
+    queue<wstring> sendAtkWord; // 공격 성공한 단어 리스트
+    list<Text> tlist;           // 떨어지고 있는 단어 리스트
+    list<Text> alist;           // 공격할 단어 리스트
     list<Text>::iterator tlistIter;
 };
 
@@ -65,42 +70,12 @@ Game::Game() {
     typing.setFillColor(sf::Color::White);
     typing.setCharacterSize(30);
     typing.setPosition(170, 648);
-
-    serverword.push_back(L"스타크래프트");
-    serverword.push_back(L"리그오브레전드");
-    serverword.push_back(L"오버워치");
-    serverword.push_back(L"서든어택");
-    serverword.push_back(L"메이플스토리");
-    serverword.push_back(L"던전앤파이터");
-    serverword.push_back(L"피파온라인");
-    serverword.push_back(L"리니지");
-    serverword.push_back(L"도타");
-    serverword.push_back(L"하스스톤");
-
-    attackword.push_back(L"방");
-    attackword.push_back(L"탄");
-    attackword.push_back(L"소");
-    attackword.push_back(L"년");
-    attackword.push_back(L"단");
-    attackword.push_back(L"김");
-    attackword.push_back(L"치");
-    attackword.push_back(L"찌");
-    attackword.push_back(L"개");
-    attackword.push_back(L"를");
-    attackword.push_back(L"좋");
-    attackword.push_back(L"아");
-    attackword.push_back(L"해");
-    attackword.push_back(L"아");
-    attackword.push_back(L"이");
-
-    for (int i = 0; i < 1000; i++) {
-        serverword.push_back(L"가나다");
-    }
-
-    for (int i = 0; i < 1000; i++) {
-        attackword.push_back(L"김범수");
-    }
 }
+
+/*---------------서버로부터 받아온 단어 관련 함수------------------*/
+
+void Game::setServerWord(wstring word) { serverword.push_back(word); }
+void Game::setAttackWord(wstring word) { attackword.push_back(word); }
 
 /*-------------------tlist 단어 관련 함수-----------------------------*/
 
@@ -187,9 +162,10 @@ void Game::update(Time elapsed, Text t, size_t level) {
         if (t.getString() ==
             (*tlistIter).getString()) { // 동일시 공격할 단어 삭제 후 서버 전송
 
+            sendAtkWord.push(
+                (*tlistIter).getString()); // snedAtkWord에 공격할 단어 저장
             alist.erase(tlistIter++);
-
-            /* 서버로 attack word를 전송해야함*/
+            break;
         }
     }
 }
