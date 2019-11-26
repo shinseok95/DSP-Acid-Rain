@@ -62,7 +62,7 @@ void *Read(void *none) { // 서버로부터 단어 받아오기
             // 공격할 단어 tag : A
             game.setAttackWord(str);
             break;
-       case 7:
+        case 7:
             cout<<"start"<<endl;
             wait=false;
             break;
@@ -90,8 +90,7 @@ void Write(int tag, wstring str) { // 공격할 단어 서버로 전송
             if(writebuffer[i*4+4]==0)
                 writebuffer[i*4+4]=101;
         }
-        len=strlen(writebuffer);
-    int sendlen = send(serfd, str.data(), 128, 0);
+    int sendlen = send(serfd, writebuffer, 128, 0);
     if (sendlen < 0) {
         cout << "서버의 연결이 끊어졌습니다." << endl;
         return;

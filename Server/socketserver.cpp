@@ -121,15 +121,15 @@ int main() {
     string listenexit;
     cout << "아무 문자열이나 입력 후 엔터를 눌러서 게임을 시작해주세요" << endl;
     cin >> listenexit;
-    for(int j=0;j<10;j++)
+    for(int i=0;i<10;i++)
     {
+        if(!clienton[i])
+            continue;
+        for(int j=0;j<5;j++)
+        {
             int idx = mt() % wordlen;
-            for(int i=0;i<10;i++)
-            {
-                if(!clienton[i])
-                    continue;
-                Write(1, words[idx],i);
-            }
+            Write(2, words[idx],i);
+        }
     }
 
     for(int i=0;i<10;i++)
@@ -299,7 +299,7 @@ void* DataProcess(void *none) {
                 do
                 {
                     target=mt()%10;
-                } while (!clienton[target]);
+                } while (!clienton[target]||target==i);
                 Write(1,data.second,target);
             break;
             }
@@ -321,7 +321,10 @@ void* DataProcess(void *none) {
             totaltime+=mtime;
             pre=now;
             if(totaltime>=20000)
+            {
                 timestep-=timestep/10;
+                totaltime=0;
+            }
         }
     }
 }

@@ -5,6 +5,7 @@
 #include <cstring>
 #include <list>
 #include <queue>
+#include <random>
 
 using namespace sf;
 using namespace std;
@@ -24,6 +25,9 @@ class Game {
     Text result; // 엔터를 쳤을 때 넘어가는 단어
 
     Player *player;
+
+    random_device rd;
+    mt19937 mt;
 
   public:
     std::wstring TEXTBOX; // 타이핑 단어 임시 저장
@@ -73,94 +77,75 @@ Game::Game() {
     typing.setFillColor(sf::Color::White);
     typing.setCharacterSize(30);
     typing.setPosition(170, 648);
+    mt.seed(rd());
 }
 
 /*---------------서버로부터 받아온 단어 관련 함수------------------*/
 
-void Game::setServerWord(wstring word) { serverword.push_back(word); }
-void Game::setAttackWord(wstring word) { attackword.push_back(word); }
+void Game::setServerWord(wstring word) {
+    int randomX = mt() % 900; // x좌표 랜덤 지정
+
+    Text newt(word,font,27);
+    newt.setPosition((float)randomX, 0.f);
+    setWordColor(newt, randomX);
+    tlist.push_back(newt);
+}
+
+void Game::setAttackWord(wstring word) { 
+    Text newt(word,font,27);
+    alist.push_back(newt);
+ }
 
 /*-------------------tlist 단어 관련 함수-----------------------------*/
 
-void Game::addWord() { // 떨어지고 있는 단어 리스트 추가
-    srand((unsigned int)time(NULL));
-    int randomX = rand() % 900; // x좌표 랜덤 지정
-
-    Text newtext = Text(serverword.front().data(), font, 30);
-    newtext.setPosition((float)randomX, 0.f);
-    setWordColor(newtext, randomX);
-
-    serverword.pop_front();   // serverword의 단어를 빼서 (pop)
-    tlist.push_back(newtext); // temlist에 삽입 (push)
-}
-
 /*---------------------alist 단어 관련 함수----------------------------*/
-
-void Game::addAtackWord() { // 공격할 단어 리스트 추가 (size가 0일시))
-
-    for (int i = 0; i < 5; i++) {
-
-        alist.push_back(temAtklist.front());
-        temAtklist.pop_front();
-    }
-}
-
-void Game::attackWord() {
-
-    int ypos = 0;
-
-    while (temAtklist.size() < 5) { // temAtklist에 Text 5개 채움
-
-        Text newtext = Text(attackword.front().data(), font, 27);
-
-        newtext.setPosition(1105, 50 + ypos);
-        newtext.setFillColor(sf::Color::Magenta);
-
-        attackword.pop_front();        // attackword의 단어를 빼서 (pop)
-        temAtklist.push_back(newtext); // temAtklist에 삽입 (push)
-
-        ypos += 55; // y좌표 지정
-    }
-}
 
 /*------------------실시간 단어 update ----------------------*/
 
 void Game::update(Time elapsed, Game &game, size_t level) {
 
-    for (tlistIter = tlist.begin(); tlistIter != tlist.end(); ++tlistIter) {
-
-        if (game.result.getString() ==
-            (*tlistIter).getString()) { // 떨어지고 있는 단어와 타이핑 단어 비교
-            tlist.erase(tlistIter++);
-            player->setPlayerHP(HP_PLUS_VALUE); // 동일시 HP +3
-            game.result.setString("");
-        }
+    if(!tlist.empty()){
+    for (tlistIter = tlist.begin(); tlistIter != tlist.end(); tlistIter++) {
 
         if (tlistIter->getPosition().y > 580) {
-            ++tlistIter;
             tlist.pop_front();
 
             player->setPlayerHP(
                 -HP_MINUS_VALUE); // 단어가 바닥에 닿는 경우 HP -10
+            break;
 
         } else
             tlistIter->move(0, elapsed.asSeconds() * 20 *
                                    level); // 게임 난이도 설정
     }
 
+    for (tlistIter = tlist.begin(); tlistIter != tlist.end(); tlistIter++) {
+
+        if (game.result.getString() ==
+            (*tlistIter).getString()) { // 떨어지고 있는 단어와 타이핑 단어 비교
+            tlist.erase(tlistIter);
+            player->setPlayerHP(HP_PLUS_VALUE); // 동일시 HP +3
+            game.result.setString("");
+            return;
+        }
+    }
+    }
+
+    if(!alist.empty()){
     for (tlistIter = alist.begin();
          tlistIter != alist.end(); // 타이핑 단어와 공격할 단어 비교
-         ++tlistIter) {
+         tlistIter++) {
 
         if (game.result.getString() ==
             (*tlistIter).getString()) { // 동일시 공격할 단어 삭제 후 서버 전송
 
             sendAtkWord.push(
                 (*tlistIter).getString()); // snedAtkWord에 공격할 단어 저장
-            alist.erase(tlistIter++);
+            alist.erase(tlistIter);
             game.result.setString("");
             break;
         }
+    }
     }
 }
 
@@ -178,7 +163,6 @@ void Game::setWordColor(Text &text, int randomX) { // 단어 랜덤 색으로
 
     if (randomX % 3 == 0)
         text.setFillColor(sf::Color::Yellow); // White
-
     else if (randomX % 3 == 1)
         text.setFillColor(sf::Color::Red); // Red
     else

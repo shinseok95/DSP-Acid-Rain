@@ -70,9 +70,6 @@ int main() {
     // for (int i = 0; i < 10; i++)
     //     game.severAtk();
 
-    for (int i = 0; i < 5; i++)
-        game.attackWord();
-
     while (window.isOpen()) { // 창 열림
         Event event;
 
@@ -86,10 +83,6 @@ int main() {
             }
             //////////////////////////1초마다 단어
             ///추가///////////////////////////////
-            if (sectimer.getElapsedTime().asMilliseconds() > 1000) {
-                sectimer.restart();
-                game.addWord();
-            }
         }
 
         //////////////////////////화면 그리기//////////////////////////////
@@ -123,11 +116,6 @@ int main() {
         //////////////////////////화면 갱신///////////////////////////////
         Time elapsed = clock.restart();
 
-        if (game.alist.size() == 0) { // attack 단어가 5개로 초기화
-
-            game.attackWord();
-            game.addAtackWord();
-        }
 
         game.update(elapsed, game, level);
 
@@ -161,14 +149,22 @@ int main() {
             break;
         }
 
-        for (iter = game.tlist.begin(); iter != game.tlist.end(); ++iter) {
+        if(!game.tlist.empty())
+        {
+        for (iter = game.tlist.begin(); iter != game.tlist.end(); iter++) {
 
             window.draw(*iter);
         }
+        }
 
-        for (iter = game.alist.begin(); iter != game.alist.end(); ++iter) {
-
+        int ypos=50;
+        if(!game.alist.empty())
+        {
+        for (iter = game.alist.begin(); iter != game.alist.end(); iter++) {
+            iter->setPosition(1105, ypos);
             window.draw(*iter);
+            ypos+=55;
+        }
         }
 
         window.display();
