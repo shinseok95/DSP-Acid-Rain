@@ -15,10 +15,6 @@ using namespace std;
 
 class Game {
   private:
-    list<Text> temAtklist; // 공격할 단어 임시 리스트
-    list<wstring> serverword; // 서버로부터 받아온 디펜스 단어 리스트
-    list<wstring> attackword; // 서버로부터 받아온 공격할 단어 리스트
-
     Font font;
     Text text;   // 저장될 단어
     Text typing; // 타이핑 단어
@@ -53,12 +49,7 @@ class Game {
     void setAttackWord(wstring word);
 
     void setResultImage(Texture &texture, Sprite &sprite, bool result);
-    void severAtk();
     void update(Time elapsed, Game &game, size_t level);
-    void addWord();
-    void addAtackWord();
-
-    void attackWord();
 
     queue<wstring> sendAtkWord; // 공격 성공한 단어 리스트
     list<Text> tlist;           // 떨어지고 있는 단어 리스트

@@ -93,9 +93,11 @@ int main() {
         fprintf(stderr, "%s\n", strerror(errno));
         return -1;
     }
-
+    char ip[20];
+    cout<<"접속을 허용할 IP주소를 입력해주세요.";
+    cin>>ip;
     serveraddr.sin_family = AF_INET;
-    serveraddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    serveraddr.sin_addr.s_addr = inet_addr(ip);
     serveraddr.sin_port = htons(7777);
     if (bind(serverfd, (sockaddr *)&serveraddr, sizeof(serveraddr)) < 0) {
         cout << "바인딩 에러" << endl;

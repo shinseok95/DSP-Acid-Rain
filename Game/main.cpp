@@ -3,9 +3,12 @@
 
 int main() {
 
+    char ip[20];
+    cout<<"서버의 IP주소를 입력해주세요.";
+    cin>>ip;
     serfd = socket(AF_INET, SOCK_STREAM, 0);
     seraddr.sin_family = AF_INET;
-    seraddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    seraddr.sin_addr.s_addr = inet_addr(ip);
     seraddr.sin_port = htons(7777);
     if (connect(serfd, (sockaddr *)&seraddr, sizeof(seraddr)) < 0) {
         fprintf(stderr, "%s\n", strerror(errno));
