@@ -10,8 +10,7 @@ bool running = false;
 bool clienton[10];
 int clientfd[10];
 sockaddr_in clientaddr[10];
-wchar_t readbuffer[10][32];
-wchar_t writebuffer[10][32];
+char readbuffer[10][128];
 queue<wstring> dataqueue[10];
 pthread_t readthread[10];
 pthread_mutex_t writemutex[10];
@@ -24,7 +23,7 @@ mt19937 mt;
 void *ListenClient(void *none);
 void ClientDisconnect(int i);
 void Disconnect(void* none);
-void Write(wstring str, int i);
+void Write(int tag, wstring str, int i);
 void* Read(void* index);
 void* DataProcess(void* none);
 bool awake = false;
@@ -68,7 +67,7 @@ int main() {
     cout << "불러오기 완료!" << endl;
     wordlen = words.size();
     mt.seed(rd());
-
+    
     serverfd = socket(AF_INET, SOCK_STREAM, 0);
     if (serverfd < 0) {
         cout << "소켓을 열 수 없습니다." << endl;
@@ -114,23 +113,21 @@ int main() {
     for(int j=0;j<10;j++)
     {
             int idx = mt() % wordlen;
-            wcout<<words[idx]<<endl;
             for(int i=0;i<10;i++)
             {
                 if(!clienton[i])
                     continue;
-                Write(L'R' + words[idx],i);
+                Write(1, words[idx],i);
             }
     }
     for(int j=0;j<10;j++)
     {
             int idx = mt() % wordlen;
-            wcout<<words[idx]<<endl;
             for(int i=0;i<10;i++)
             {
                 if(!clienton[i])
                     continue;
-                Write(L'A' + words[idx],i);
+                Write(2, words[idx],i);
             }
     }
 
@@ -138,7 +135,7 @@ int main() {
     {
         if(!clienton[i])
             continue;
-        Write(L"S ",i);
+        Write(7,L"시작",i);
     }
     listening = false;
     pthread_cancel(listenthread);
@@ -203,11 +200,38 @@ void Disconnect(void *none) {
     close(serverfd);
 }
 
-void Write(wstring str, int i)
+void Write(int tag, wstring str, int i)
 {
         pthread_mutex_lock(&writemutex[i]);
-        const wchar_t* writebuffer=str.data();
-        int sendlen = send(clientfd[i], writebuffer, sizeof(writebuffer), MSG_NOSIGNAL);
+        wcout<<str<<endl;
+        char writebuffer[128];
+        memset(writebuffer,0,128);
+        writebuffer[0]=tag;
+        int len=str.size();
+        cout<<len<<endl;
+        for(int i=0;i<len;i++)
+        {
+            writebuffer[i*4+1]=(str[i]/1000000)%100;
+            writebuffer[i*4+2]=(str[i]/10000)%100;
+            writebuffer[i*4+3]=(str[i]/100)%100;
+            writebuffer[i*4+4]=str[i]%100;
+            if(writebuffer[i*4+1]==0)
+                writebuffer[i*4+1]=101;
+            if(writebuffer[i*4+2]==0)
+                writebuffer[i*4+2]=101;
+            if(writebuffer[i*4+3]==0)
+                writebuffer[i*4+3]=101;
+            if(writebuffer[i*4+4]==0)
+                writebuffer[i*4+4]=101;
+        }
+        len=strlen(writebuffer);
+        cout<<len<<endl;
+        for(int j=0;j<len;j++)
+        {
+            printf("%d ",writebuffer[j]);
+        }
+        printf("\n");
+        int sendlen = send(clientfd[i], writebuffer, 128, MSG_NOSIGNAL);
         if (sendlen < 0) {
             cout << "클라이언트 " << inet_ntoa(clientaddr[i].sin_addr) << "의 연결이 끊어졌습니다." << endl;
             pthread_mutex_unlock(&writemutex[i]);
@@ -223,16 +247,41 @@ void* Read(void* index)
     while(clienton[i])
     {
         int readlen = 0;
-        memset(readbuffer[i], 0, sizeof(readbuffer[i]));
-        readlen = recv(clientfd[i], readbuffer[i], sizeof(readbuffer[i]), MSG_NOSIGNAL);
+        memset(readbuffer[i], 0,128);
+        readlen = recv(clientfd[i], readbuffer[i], 128, MSG_NOSIGNAL);
         if (readlen < 0) {
             cout << "클라이언트 " << inet_ntoa(clientaddr[i].sin_addr) << "의 연결이 끊어졌습니다." << endl;
             ClientDisconnect(i);
             pthread_exit(NULL);
         }
-        if(wcslen(readbuffer[i])==0)
+        int len=strlen(readbuffer[i]);
+        if(len==0)
             continue;
-        dataqueue[i].push(readbuffer[i]);
+        wstring str;
+        int j=0;
+        while(i<len)
+        {
+            unsigned int uni=0;
+            int ch=readbuffer[i][j++];
+            if(ch<0)
+                ch+=256;
+            uni+=ch*16777216;
+            ch=readbuffer[i][j++];
+            if(ch<0)
+                ch+=256;
+            uni+=ch*65536;
+            ch=readbuffer[i][j++];
+            if(ch<0)
+                ch+=256;
+            uni+=ch*256;
+            ch=readbuffer[i][j++];
+            if(ch<0)
+                ch+=256;
+            uni+=ch;
+
+            str+=uni;
+        }
+        dataqueue[i].push(str);
     }
 }
 
@@ -250,16 +299,16 @@ void* DataProcess(void *none) {
             wstring str = dataqueue[i].front();
             dataqueue[i].pop();
             switch (str[0]) {
-            case L'A':
+            case L'공':
                 int idx = mt() % wordlen;
-                Write(L'A'+words[idx],i);
+                Write(2,words[idx],i);
                 int target;
                 do
                 {
                     target=mt()%10;
                 } while (!clienton[target]);
-                str[0]=L'R';
-                Write(str,target);
+                str=str.substr(1);
+                Write(1,str,target);
             break;
             }
         }
@@ -276,7 +325,7 @@ void* DataProcess(void *none) {
             {
                 if(!clienton[i])
                     continue;
-                Write(L'R' + words[idx],i);
+                Write(1,words[idx],i);
             }
             totaltime+=mtime;
             pre=now;

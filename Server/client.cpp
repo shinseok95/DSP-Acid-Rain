@@ -20,7 +20,7 @@ if(connect(sockfd, (sockaddr *)&servAddr, sizeof(servAddr))<0)
             return -1;
 }
 while (1) {
-    memset(writebuffer,0,sizeof(writebuffer));
+    memset(writebuffer,0, 64);
     wcin>>writebuffer;
     wcout<<writebuffer;
     int sendlen = (send(sockfd,writebuffer,sizeof(writebuffer), 0));

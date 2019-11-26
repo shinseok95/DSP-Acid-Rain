@@ -19,3 +19,4 @@
 #include <vector>
 #include <random>
 #define _BSD_SOURCE
+#define MAX_SIZE 128

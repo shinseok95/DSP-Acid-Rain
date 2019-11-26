@@ -180,11 +180,13 @@ int main() {
         for (iter = game.tlist.begin(); iter != game.tlist.end(); ++iter) {
 
             window.draw(*iter);
+            std::wcout<<iter->getString().toWideString()<<endl;
         }
 
         for (iter = game.alist.begin(); iter != game.alist.end(); ++iter) {
 
             window.draw(*iter);
+            std::wcout<<iter->getString().toWideString()<<endl;
         }
 
         window.display();

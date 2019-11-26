@@ -7,16 +7,10 @@
 #include <sys/ipc.h>
 #include <sys/msg.h>
 #include <sys/types.h>
+
 using namespace std;
 
 int main() {
-    wstring str=L"asdf";
-    printf("%d\n%d\n",L'a',str[0]);
-    wcout<<str[0]<<endl;
-    wcout<<L'a'<<endl;
-    if(str[0] == L'a')
-    {
-        wcout<<(L"true" + str).data()<<endl;
-    }
+    printf("%d %d",L'공'%256,L'비'%256);
     return 0;
 }
