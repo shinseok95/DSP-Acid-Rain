@@ -3,21 +3,21 @@
 
 int main() {
 
-    // serfd = socket(AF_INET, SOCK_STREAM, 0);
-    // seraddr.sin_family = AF_INET;
-    // seraddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    // seraddr.sin_port = htons(7777);
-    // if (connect(serfd, (sockaddr *)&seraddr, sizeof(seraddr)) < 0) {
-    //     fprintf(stderr, "%s\n", strerror(errno));
-    //     return -1;
-    // }
+    serfd = socket(AF_INET, SOCK_STREAM, 0);
+    seraddr.sin_family = AF_INET;
+    seraddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    seraddr.sin_port = htons(7777);
+    if (connect(serfd, (sockaddr *)&seraddr, sizeof(seraddr)) < 0) {
+        fprintf(stderr, "%s\n", strerror(errno));
+        return -1;
+    }
 
-    // running = true;
-    // pthread_create(&readthread, NULL, Read, NULL);
-    // pthread_detach(readthread);
+    running = true;
+    pthread_create(&readthread, NULL, Read, NULL);
+    pthread_detach(readthread);
 
-    // while (wait) {
-    // }
+    while (wait) {
+    }
 
     size_t level = 4; // 단어 내려오는 속도 조절
     Clock clock;
@@ -134,7 +134,7 @@ int main() {
         /*-------- sendAtkWord(queue)에 단어가 존재하는 경우 -----------*/
 
         if (!game.sendAtkWord.empty()) {
-            Write(L'A' + game.sendAtkWord.front()); // 서버로 전송
+            Write(2,game.sendAtkWord.front()); // 서버로 전송
             game.sendAtkWord.pop();
         }
 
@@ -163,13 +163,11 @@ int main() {
         for (iter = game.tlist.begin(); iter != game.tlist.end(); ++iter) {
 
             window.draw(*iter);
-            std::wcout<<iter->getString().toWideString()<<endl;
         }
 
         for (iter = game.alist.begin(); iter != game.alist.end(); ++iter) {
 
             window.draw(*iter);
-            std::wcout<<iter->getString().toWideString()<<endl;
         }
 
         window.display();

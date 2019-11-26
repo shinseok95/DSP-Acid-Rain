@@ -11,7 +11,7 @@ bool clienton[10];
 int clientfd[10];
 sockaddr_in clientaddr[10];
 char readbuffer[10][128];
-queue<wstring> dataqueue[10];
+queue<pair<int,wstring>> dataqueue[10];
 pthread_t readthread[10];
 pthread_mutex_t writemutex[10];
 
@@ -254,34 +254,42 @@ void* Read(void* index)
             ClientDisconnect(i);
             pthread_exit(NULL);
         }
+        cout<<readbuffer[i]<<endl<<strlen(readbuffer[i])<<endl;
         int len=strlen(readbuffer[i]);
+        for(int j=0;j<len;j++)
+        {
+            printf("%d ",readbuffer[i][j]);
+        }
         if(len==0)
             continue;
         wstring str;
-        int j=0;
-        while(i<len)
+        int j=1;
+        while(j<len)
         {
-            unsigned int uni=0;
-            int ch=readbuffer[i][j++];
-            if(ch<0)
-                ch+=256;
-            uni+=ch*16777216;
+            int uni=0;
+            char ch=readbuffer[i][j++];
+            if(ch==101)
+                ch=0;
+            uni+=ch*1000000;
             ch=readbuffer[i][j++];
-            if(ch<0)
-                ch+=256;
-            uni+=ch*65536;
+            if(ch==101)
+                ch=0;
+            uni+=ch*10000;
             ch=readbuffer[i][j++];
-            if(ch<0)
-                ch+=256;
-            uni+=ch*256;
+            if(ch==101)
+                ch=0;
+            uni+=ch*100;
             ch=readbuffer[i][j++];
-            if(ch<0)
-                ch+=256;
+            if(ch==101)
+                ch=0;
             uni+=ch;
-
+            
             str+=uni;
         }
-        dataqueue[i].push(str);
+        wcout<<str<<endl;
+        int tag = readbuffer[i][0];
+        pair<int,wstring> data(tag,str);
+        dataqueue[i].push(data);
     }
 }
 
@@ -296,9 +304,9 @@ void* DataProcess(void *none) {
                 continue;
             if (dataqueue[i].empty())
                 continue;
-            wstring str = dataqueue[i].front();
+            pair<int,wstring> data = dataqueue[i].front();
             dataqueue[i].pop();
-            switch (str[0]) {
+            switch (data.first) {
             case L'공':
                 int idx = mt() % wordlen;
                 Write(2,words[idx],i);
@@ -307,8 +315,7 @@ void* DataProcess(void *none) {
                 {
                     target=mt()%10;
                 } while (!clienton[target]);
-                str=str.substr(1);
-                Write(1,str,target);
+                Write(1,data.second,target);
             break;
             }
         }
