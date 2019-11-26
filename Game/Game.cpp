@@ -86,10 +86,9 @@ void Game::addWord() { // 떨어지고 있는 단어 리스트 추가
     srand((unsigned int)time(NULL));
     int randomX = rand() % 900; // x좌표 랜덤 지정
 
-    Text newtext = Text(serverword.front(), font, 30);
+    Text newtext = Text(serverword.front().data(), font, 30);
     newtext.setPosition((float)randomX, 0.f);
     setWordColor(newtext, randomX);
-    std::wcout<<newtext.getString().toWideString()<<endl;
 
     serverword.pop_front();   // serverword의 단어를 빼서 (pop)
     tlist.push_back(newtext); // temlist에 삽입 (push)
@@ -102,7 +101,6 @@ void Game::addAtackWord() { // 공격할 단어 리스트 추가 (size가 0일�
     for (int i = 0; i < 5; i++) {
 
         alist.push_back(temAtklist.front());
-            std::wcout<<temAtklist.front().getString().toWideString()<<endl;
         temAtklist.pop_front();
     }
 }
@@ -113,7 +111,7 @@ void Game::attackWord() {
 
     while (temAtklist.size() < 5) { // temAtklist에 Text 5개 채움
 
-        Text newtext = Text(attackword.front(), font, 27);
+        Text newtext = Text(attackword.front().data(), font, 27);
 
         newtext.setPosition(1105, 50 + ypos);
         newtext.setFillColor(sf::Color::Magenta);

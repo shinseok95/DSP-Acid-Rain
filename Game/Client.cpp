@@ -20,16 +20,11 @@ void *Read(void *none) { // 서버로부터 단어 받아오기
     while (running) {
         memset(readbuffer, 0, 128);
         int readlen=recv(serfd, readbuffer, 128, 0);
-    if (readlen < 0) {
+    if (readlen <= 0) {
         cout << "서버의 연결이 끊어졌습니다." << endl;
         return NULL;
     }
-        cout<<readbuffer<<endl<<strlen(readbuffer)<<endl;
         int len=strlen(readbuffer);
-        for(int j=0;j<len;j++)
-        {
-            printf("%d ",readbuffer[j]);
-        }
         if(len==0)
             continue;
         wstring str;
@@ -56,18 +51,15 @@ void *Read(void *none) { // 서버로부터 단어 받아오기
             
             str+=uni;
         }
-        wcout<<str<<endl;
         int tag = readbuffer[0];
 
         switch (tag) {
         case 1:
             // 방어할 단어 tag : R
-            wcout<<str<<endl;
             game.setServerWord(str);
             break;
         case 2:
             // 공격할 단어 tag : A
-            wcout<<str<<endl;
             game.setAttackWord(str);
             break;
        case 7:
@@ -79,12 +71,10 @@ void *Read(void *none) { // 서버로부터 단어 받아오기
 }
 
 void Write(int tag, wstring str) { // 공격할 단어 서버로 전송
-        wcout<<str<<endl;
         char writebuffer[128];
         memset(writebuffer,0,128);
         writebuffer[0]=tag;
         int len=str.size();
-        cout<<len<<endl;
         for(int i=0;i<len;i++)
         {
             writebuffer[i*4+1]=(str[i]/1000000)%100;
@@ -101,12 +91,6 @@ void Write(int tag, wstring str) { // 공격할 단어 서버로 전송
                 writebuffer[i*4+4]=101;
         }
         len=strlen(writebuffer);
-        cout<<len<<endl;
-        for(int j=0;j<len;j++)
-        {
-            printf("%d ",writebuffer[j]);
-        }
-        printf("\n");
     int sendlen = send(serfd, str.data(), 128, 0);
     if (sendlen < 0) {
         cout << "서버의 연결이 끊어졌습니다." << endl;

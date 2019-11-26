@@ -45,20 +45,31 @@ int main() {
         execvp("python3", exeargv);
         return 0;
     }
-
     message msg;
     while (true) {
         memset(&msg, 0, sizeof(msg));
         msgrcv(msqid, &msg, sizeof(msg) - sizeof(long), 1, 0);
         string temp(msg.str);
-        wstring word;
-        word.assign(temp.begin(),temp.end());
-        if (word == L"END")
+        if (temp == "END")
             break;
-        else
-            words.push_back(word);
-        wcout << words.back() << endl;
+        wstring word;
+        int len=temp.length();
+        int i=0;
+        while(i<len)
+        {
+            int uni=0;
+            uni+=(temp[i]+32)*4096;
+            i++;
+            uni+=(temp[i]+128)*64;
+            i++;
+            uni+=(temp[i]+128);
+            i++;
+            word+=uni;
+        }
+        words.push_back(word);
+        len=word.length();
     }
+
     msgctl(msqid, IPC_RMID, NULL);
     if (words.empty()) {
         cout << "주제코드가 잘못 되었거나 단어를 불러올 수 없습니다." << endl;
@@ -118,16 +129,6 @@ int main() {
                 if(!clienton[i])
                     continue;
                 Write(1, words[idx],i);
-            }
-    }
-    for(int j=0;j<10;j++)
-    {
-            int idx = mt() % wordlen;
-            for(int i=0;i<10;i++)
-            {
-                if(!clienton[i])
-                    continue;
-                Write(2, words[idx],i);
             }
     }
 
@@ -202,13 +203,11 @@ void Disconnect(void *none) {
 
 void Write(int tag, wstring str, int i)
 {
-        pthread_mutex_lock(&writemutex[i]);
-        wcout<<str<<endl;
+        pthread_mutex_lock(&writemutex[i]);\
         char writebuffer[128];
         memset(writebuffer,0,128);
         writebuffer[0]=tag;
-        int len=str.size();
-        cout<<len<<endl;
+        int len=str.size();\
         for(int i=0;i<len;i++)
         {
             writebuffer[i*4+1]=(str[i]/1000000)%100;
@@ -225,12 +224,6 @@ void Write(int tag, wstring str, int i)
                 writebuffer[i*4+4]=101;
         }
         len=strlen(writebuffer);
-        cout<<len<<endl;
-        for(int j=0;j<len;j++)
-        {
-            printf("%d ",writebuffer[j]);
-        }
-        printf("\n");
         int sendlen = send(clientfd[i], writebuffer, 128, MSG_NOSIGNAL);
         if (sendlen < 0) {
             cout << "클라이언트 " << inet_ntoa(clientaddr[i].sin_addr) << "의 연결이 끊어졌습니다." << endl;
@@ -249,19 +242,12 @@ void* Read(void* index)
         int readlen = 0;
         memset(readbuffer[i], 0,128);
         readlen = recv(clientfd[i], readbuffer[i], 128, MSG_NOSIGNAL);
-        if (readlen < 0) {
+        if (readlen <= 0) {
             cout << "클라이언트 " << inet_ntoa(clientaddr[i].sin_addr) << "의 연결이 끊어졌습니다." << endl;
             ClientDisconnect(i);
             pthread_exit(NULL);
         }
-        cout<<readbuffer[i]<<endl<<strlen(readbuffer[i])<<endl;
         int len=strlen(readbuffer[i]);
-        for(int j=0;j<len;j++)
-        {
-            printf("%d ",readbuffer[i][j]);
-        }
-        if(len==0)
-            continue;
         wstring str;
         int j=1;
         while(j<len)
@@ -286,7 +272,6 @@ void* Read(void* index)
             
             str+=uni;
         }
-        wcout<<str<<endl;
         int tag = readbuffer[i][0];
         pair<int,wstring> data(tag,str);
         dataqueue[i].push(data);
@@ -307,7 +292,7 @@ void* DataProcess(void *none) {
             pair<int,wstring> data = dataqueue[i].front();
             dataqueue[i].pop();
             switch (data.first) {
-            case L'공':
+            case 2:
                 int idx = mt() % wordlen;
                 Write(2,words[idx],i);
                 int target;
@@ -327,7 +312,6 @@ void* DataProcess(void *none) {
         if(mtime>=timestep)
         {
             int idx = mt() % wordlen;
-            wcout<<words[idx]<<endl;
             for(int i=0;i<10;i++)
             {
                 if(!clienton[i])

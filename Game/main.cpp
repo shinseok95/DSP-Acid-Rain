@@ -153,6 +153,7 @@ int main() {
             game.setResultImage(texture, sprite,
                                 false); // 패배 이미지 가져오기
             while (sectimer.getElapsedTime().asMilliseconds() < 5000) {
+                window.clear();
                 window.draw(sprite);
                 window.display();
             }
