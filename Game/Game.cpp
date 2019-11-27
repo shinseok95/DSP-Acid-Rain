@@ -25,6 +25,9 @@ class Game {
     random_device rd;
     mt19937 mt;
 
+    bool is_over;
+    size_t level;
+
   public:
     std::wstring TEXTBOX; // 타이핑 단어 임시 저장
 
@@ -48,8 +51,11 @@ class Game {
     void setServerWord(wstring word);
     void setAttackWord(wstring word);
 
+    bool getOver(void); // 게임이 끝났는 지 확인
+    void setOver(void); // 게임 끝내기
+
     void setResultImage(Texture &texture, Sprite &sprite, bool result);
-    void update(Time elapsed, Game &game, size_t level);
+    void update(Time elapsed, Game &game);
 
     queue<wstring> sendAtkWord; // 공격 성공한 단어 리스트
     list<Text> tlist;           // 떨어지고 있는 단어 리스트
@@ -69,6 +75,9 @@ Game::Game() {
     typing.setCharacterSize(30);
     typing.setPosition(170, 648);
     mt.seed(rd());
+
+    is_over = false;
+    level = 4;
 }
 
 /*---------------서버로부터 받아온 단어 관련 함수------------------*/
@@ -76,16 +85,24 @@ Game::Game() {
 void Game::setServerWord(wstring word) {
     int randomX = mt() % 900; // x좌표 랜덤 지정
 
-    Text newt(word,font,27);
+    Text newt(word, font, 27);
     newt.setPosition((float)randomX, 0.f);
     setWordColor(newt, randomX);
     tlist.push_back(newt);
 }
 
-void Game::setAttackWord(wstring word) { 
-    Text newt(word,font,27);
+void Game::setAttackWord(wstring word) {
+    Text newt(word, font, 27);
     alist.push_back(newt);
- }
+}
+
+bool Game::getOver(void) { // 게임이 끝났는 지 확인
+    return is_over;
+}
+void Game::setOver(void) { // 게임 끝내기
+
+    is_over = true;
+}
 
 /*-------------------tlist 단어 관련 함수-----------------------------*/
 
@@ -93,50 +110,52 @@ void Game::setAttackWord(wstring word) {
 
 /*------------------실시간 단어 update ----------------------*/
 
-void Game::update(Time elapsed, Game &game, size_t level) {
+void Game::update(Time elapsed, Game &game) {
 
-    if(!tlist.empty()){
-    for (tlistIter = tlist.begin(); tlistIter != tlist.end(); tlistIter++) {
+    if (!tlist.empty()) {
+        for (tlistIter = tlist.begin(); tlistIter != tlist.end(); tlistIter++) {
 
-        if (tlistIter->getPosition().y > 580) {
-            tlist.pop_front();
+            if (tlistIter->getPosition().y > 580) {
+                tlist.pop_front();
 
-            player->setPlayerHP(
-                -HP_MINUS_VALUE); // 단어가 바닥에 닿는 경우 HP -10
-            break;
+                player->setPlayerHP(
+                    -HP_MINUS_VALUE); // 단어가 바닥에 닿는 경우 HP -10
+                break;
 
-        } else
-            tlistIter->move(0, elapsed.asSeconds() * 20 *
-                                   level); // 게임 난이도 설정
-    }
+            } else
+                tlistIter->move(0, elapsed.asSeconds() * 20 *
+                                       level); // 게임 난이도 설정
+        }
 
-    for (tlistIter = tlist.begin(); tlistIter != tlist.end(); tlistIter++) {
+        for (tlistIter = tlist.begin(); tlistIter != tlist.end(); tlistIter++) {
 
-        if (game.result.getString() ==
-            (*tlistIter).getString()) { // 떨어지고 있는 단어와 타이핑 단어 비교
-            tlist.erase(tlistIter);
-            player->setPlayerHP(HP_PLUS_VALUE); // 동일시 HP +3
-            game.result.setString("");
-            return;
+            if (game.result.getString() ==
+                (*tlistIter)
+                    .getString()) { // 떨어지고 있는 단어와 타이핑 단어 비교
+                tlist.erase(tlistIter);
+                player->setPlayerHP(HP_PLUS_VALUE); // 동일시 HP +3
+                game.result.setString("");
+                return;
+            }
         }
     }
-    }
 
-    if(!alist.empty()){
-    for (tlistIter = alist.begin();
-         tlistIter != alist.end(); // 타이핑 단어와 공격할 단어 비교
-         tlistIter++) {
+    if (!alist.empty()) {
+        for (tlistIter = alist.begin();
+             tlistIter != alist.end(); // 타이핑 단어와 공격할 단어 비교
+             tlistIter++) {
 
-        if (game.result.getString() ==
-            (*tlistIter).getString()) { // 동일시 공격할 단어 삭제 후 서버 전송
+            if (game.result.getString() ==
+                (*tlistIter)
+                    .getString()) { // 동일시 공격할 단어 삭제 후 서버 전송
 
-            sendAtkWord.push(
-                (*tlistIter).getString()); // snedAtkWord에 공격할 단어 저장
-            alist.erase(tlistIter);
-            game.result.setString("");
-            break;
+                sendAtkWord.push(
+                    (*tlistIter).getString()); // snedAtkWord에 공격할 단어 저장
+                alist.erase(tlistIter);
+                game.result.setString("");
+                break;
+            }
         }
-    }
     }
 }
 

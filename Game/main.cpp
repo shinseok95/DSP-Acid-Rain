@@ -4,8 +4,8 @@
 int main() {
 
     char ip[20];
-    cout<<"서버의 IP주소를 입력해주세요.";
-    cin>>ip;
+    cout << "서버의 IP주소를 입력해주세요" << endl;
+    cin >> ip;
     serfd = socket(AF_INET, SOCK_STREAM, 0);
     seraddr.sin_family = AF_INET;
     seraddr.sin_addr.s_addr = inet_addr(ip);
@@ -19,15 +19,14 @@ int main() {
     pthread_create(&readthread, NULL, Read, NULL);
     pthread_detach(readthread);
 
-    Write(7,L"시작");
+    Write(7, L"시작");
 
     while (wait) {
-    }
+    } // 게임 시작 전 무한루프
 
-    size_t level = 4; // 단어 내려오는 속도 조절
     Clock clock;
     Clock sectimer;
-    RenderWindow window(VideoMode(1280, 720), L"산성비 테스트");
+    RenderWindow window(VideoMode(1280, 720), L"Acid Rain Game");
     list<Text>::iterator iter;
 
     sf::Music music;
@@ -121,13 +120,12 @@ int main() {
         //////////////////////////화면 갱신///////////////////////////////
         Time elapsed = clock.restart();
 
-
-        game.update(elapsed, game, level);
+        game.update(elapsed, game);
 
         /*-------- sendAtkWord(queue)에 단어가 존재하는 경우 -----------*/
 
         if (!game.sendAtkWord.empty()) {
-            Write(2,game.sendAtkWord.front()); // 서버로 전송
+            Write(2, game.sendAtkWord.front()); // 서버로 전송
             game.sendAtkWord.pop();
         }
 
@@ -145,7 +143,7 @@ int main() {
             0) { // HP가 0 이하가 될 경우 게임종료
             game.setResultImage(texture, sprite,
                                 false); // 패배 이미지 가져오기
-            Write(6,L"죽음");
+            Write(6, L"사망");
             while (sectimer.getElapsedTime().asMilliseconds() < 5000) {
                 window.clear();
                 window.draw(sprite);
@@ -155,25 +153,38 @@ int main() {
             break;
         }
 
-        if(!game.tlist.empty())
-        {
-        for (iter = game.tlist.begin(); iter != game.tlist.end(); iter++) {
+        if (game.getOver()) { // 체력이 남아있는데 게임이 끝난경우(승리))
 
-            window.draw(*iter);
-        }
+            game.setResultImage(texture, sprite,
+                                true); // 승리 이미지 가져오기
+            while (sectimer.getElapsedTime().asMilliseconds() < 5000) {
+                window.clear();
+                window.draw(sprite);
+                window.display();
+            }
+
+            break;
         }
 
-        int ypos=50;
-        if(!game.alist.empty())
-        {
-        for (iter = game.alist.begin(); iter != game.alist.end(); iter++) {
-            iter->setPosition(1105, ypos);
-            window.draw(*iter);
-            ypos+=55;
+        if (!game.tlist.empty()) {
+            for (iter = game.tlist.begin(); iter != game.tlist.end(); iter++) {
+
+                window.draw(*iter);
+            }
         }
+
+        int ypos = 50;
+        if (!game.alist.empty()) {
+            for (iter = game.alist.begin(); iter != game.alist.end(); iter++) {
+                iter->setPosition(1105, ypos);
+                window.draw(*iter);
+                ypos += 55;
+            }
         }
 
         window.display();
+
+        sectimer.restart(); // 게임 종료 time을 위해 필요
         //////////////////////////////////////////////////////////////////
     } //창 닫힘
 
