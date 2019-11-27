@@ -11,7 +11,7 @@ bool clienton[10];
 int clientfd[10];
 sockaddr_in clientaddr[10];
 char readbuffer[10][128];
-queue<pair<int,wstring>> dataqueue[10];
+queue<pair<int, wstring>> dataqueue[10];
 pthread_t readthread[10];
 pthread_mutex_t writemutex[10];
 
@@ -22,10 +22,10 @@ mt19937 mt;
 
 void *ListenClient(void *none);
 void ClientDisconnect(int i);
-void Disconnect(void* none);
+void Disconnect(void *none);
 void Write(int tag, wstring str, int i);
-void* Read(void* index);
-void* DataProcess(void* none);
+void *Read(void *index);
+void *DataProcess(void *none);
 
 int main() {
     pid_t pid = 0;
@@ -52,21 +52,19 @@ int main() {
         if (temp == "END")
             break;
         wstring word;
-        int len=temp.length();
-        int i=0;
-        while(i<len)
-        {
-            int uni=0;
-            uni+=(temp[i]+32)*4096;
+        int len = temp.length();
+        int i = 0;
+        while (i < len) {
+            int uni = 0;
+            uni += (temp[i] + 32) * 4096;
             i++;
-            uni+=(temp[i]+128)*64;
+            uni += (temp[i] + 128) * 64;
             i++;
-            uni+=(temp[i]+128);
+            uni += (temp[i] + 128);
             i++;
-            word+=uni;
+            word += uni;
         }
         words.push_back(word);
-        len=word.length();
     }
 
     msgctl(msqid, IPC_RMID, NULL);
@@ -77,7 +75,7 @@ int main() {
     cout << "불러오기 완료!" << endl;
     wordlen = words.size();
     mt.seed(rd());
-    
+
     serverfd = socket(AF_INET, SOCK_STREAM, 0);
     if (serverfd < 0) {
         cout << "소켓을 열 수 없습니다." << endl;
@@ -93,8 +91,8 @@ int main() {
         return -1;
     }
     char ip[20];
-    cout<<"접속을 허용할 IP주소를 입력해주세요.";
-    cin>>ip;
+    cout << "접속을 허용할 IP주소를 입력해주세요.";
+    cin >> ip;
     serveraddr.sin_family = AF_INET;
     serveraddr.sin_addr.s_addr = inet_addr(ip);
     serveraddr.sin_port = htons(7777);
@@ -122,30 +120,28 @@ int main() {
     string listenexit;
     cout << "시작을 입력 후 엔터를 눌러서 게임을 시작해주세요" << endl;
     cin >> listenexit;
-    int playernum=0;
-    for(int i=0;i<10;i++)
-    {
-        if(!clienton[i])
+    int playernum = 0;
+    for (int i = 0; i < 10; i++) {
+        if (!clienton[i])
             continue;
         playernum++;
-        for(int j=0;j<5;j++)
-        {
+        for (int j = 0; j < 5; j++) {
             int idx = mt() % wordlen;
-            Write(2, words[idx],i);
+            Write(2, words[idx], i);
         }
-        Write(7,L"시작",i);
+        Write(7, L"시작", i);
     }
 
-    cout<<"게임을 시작합니다!"<<endl;
-    cout<<playernum<<"명의 플레이어가 게임에 참여했습니다."<<endl;
-    
+    cout << "게임을 시작합니다!" << endl;
+    cout << playernum << "명의 플레이어가 게임에 참여했습니다." << endl;
+
     listening = false;
     pthread_cancel(listenthread);
     pthread_t mainthread;
-    pthread_create(&mainthread,NULL,DataProcess,NULL);
-    int* state;
-    running=true;
-    pthread_join(mainthread, (void**)&state);
+    pthread_create(&mainthread, NULL, DataProcess, NULL);
+    int *state;
+    running = true;
+    pthread_join(mainthread, (void **)&state);
     Disconnect(NULL);
     return 0;
 }
@@ -176,9 +172,9 @@ void *ListenClient(void *none) {
         clienton[i] = true;
         clientfd[i] = fd;
         clientaddr[i] = addr;
-        pthread_create(&readthread[i],NULL,Read,&i);
+        pthread_create(&readthread[i], NULL, Read, &i);
         pthread_detach(readthread[i]);
-        pthread_mutex_init(&writemutex[i],NULL);
+        pthread_mutex_init(&writemutex[i], NULL);
 
         cout << "클라이언트 접속" << endl;
         cout << "IP주소:" << inet_ntoa(addr.sin_addr) << endl;
@@ -190,7 +186,7 @@ void ClientDisconnect(int i) {
     pthread_cancel(readthread[i]);
     pthread_mutex_destroy(&writemutex[i]);
     clienton[i] = false;
-    cout<<"플레이어"<<i+1<<"이(가) 죽었습니다."<<endl;
+    cout << "플레이어" << i + 1 << "이(가) 죽었습니다." << endl;
     close(clientfd[i]);
 }
 
@@ -203,143 +199,136 @@ void Disconnect(void *none) {
     close(serverfd);
 }
 
-void Write(int tag, wstring str, int i)
-{
-        pthread_mutex_lock(&writemutex[i]);\
-        char writebuffer[128];
-        memset(writebuffer,0,128);
-        writebuffer[0]=tag;
-        int len=str.size();
-        for(int i=0;i<len;i++)
-        {
-            writebuffer[i*3+1]=(str[i]/10000)%100;
-            writebuffer[i*3+2]=(str[i]/100)%100;
-            writebuffer[i*3+3]=str[i]%100;
-            if(writebuffer[i*3+1]==0)
-                writebuffer[i*3+1]=101;
-            if(writebuffer[i*3+2]==0)
-                writebuffer[i*3+2]=101;
-            if(writebuffer[i*3+3]==0)
-                writebuffer[i*3+3]=101;
-        }
-        len=strlen(writebuffer);
-        int sendlen = send(clientfd[i], writebuffer, 128, MSG_NOSIGNAL);
-        if (sendlen < 0) {
-            cout << "클라이언트 " << inet_ntoa(clientaddr[i].sin_addr) << "의 연결이 끊어졌습니다." << endl;
-            pthread_mutex_unlock(&writemutex[i]);
-            ClientDisconnect(i);
-            return;
-        }
+void Write(int tag, wstring str, int i) {
+    pthread_mutex_lock(&writemutex[i]);
+    char writebuffer[128];
+    memset(writebuffer, 0, 128);
+    writebuffer[0] = tag;
+    int len = str.size();
+    for (int i = 0; i < len; i++) {
+        writebuffer[i * 3 + 1] = (str[i] / 10000) % 100;
+        writebuffer[i * 3 + 2] = (str[i] / 100) % 100;
+        writebuffer[i * 3 + 3] = str[i] % 100;
+        if (writebuffer[i * 3 + 1] == 0)
+            writebuffer[i * 3 + 1] = 101;
+        if (writebuffer[i * 3 + 2] == 0)
+            writebuffer[i * 3 + 2] = 101;
+        if (writebuffer[i * 3 + 3] == 0)
+            writebuffer[i * 3 + 3] = 101;
+    }
+    len = strlen(writebuffer);
+    int sendlen = send(clientfd[i], writebuffer, 128, MSG_NOSIGNAL);
+    if (sendlen < 0) {
+        cout << "클라이언트 " << inet_ntoa(clientaddr[i].sin_addr)
+             << "의 연결이 끊어졌습니다." << endl;
+        pthread_mutex_unlock(&writemutex[i]);
+        ClientDisconnect(i);
+        return;
+    }
     pthread_mutex_unlock(&writemutex[i]);
 }
 
-void* Read(void* index)
-{
-    int i=*((int*)index);
-    while(clienton[i])
-    {
+void *Read(void *index) {
+    int i = *((int *)index);
+    while (clienton[i]) {
         int readlen = 0;
-        memset(readbuffer[i], 0,128);
+        memset(readbuffer[i], 0, 128);
         readlen = recv(clientfd[i], readbuffer[i], 128, MSG_NOSIGNAL);
         if (readlen <= 0) {
-            cout << "클라이언트 " << inet_ntoa(clientaddr[i].sin_addr) << "의 연결이 끊어졌습니다." << endl;
+            cout << "클라이언트 " << inet_ntoa(clientaddr[i].sin_addr)
+                 << "의 연결이 끊어졌습니다." << endl;
             ClientDisconnect(i);
             pthread_exit(NULL);
         }
-        int len=strlen(readbuffer[i]);
+        int len = strlen(readbuffer[i]);
         wstring str;
-        int j=1;
-        while(j<len)
-        {
-            int uni=0;
-            char ch=readbuffer[i][j++];
-            if(ch==101)
-                ch=0;
-            uni+=ch*10000;
-            ch=readbuffer[i][j++];
-            if(ch==101)
-                ch=0;
-            uni+=ch*100;
-            ch=readbuffer[i][j++];
-            if(ch==101)
-                ch=0;
-            uni+=ch;
-            
-            str+=uni;
+        int j = 1;
+        while (j < len) {
+            int uni = 0;
+            char ch = readbuffer[i][j++];
+            if (ch == 101)
+                ch = 0;
+            uni += ch * 10000;
+            ch = readbuffer[i][j++];
+            if (ch == 101)
+                ch = 0;
+            uni += ch * 100;
+            ch = readbuffer[i][j++];
+            if (ch == 101)
+                ch = 0;
+            uni += ch;
+
+            str += uni;
         }
         int tag = readbuffer[i][0];
-        pair<int,wstring> data(tag,str);
+        pair<int, wstring> data(tag, str);
         dataqueue[i].push(data);
     }
 }
 
-void* DataProcess(void *none) {
-    int timestep=5000;
-    long totaltime=0;
+void *DataProcess(void *none) {
+    int timestep = 5000;
+    long totaltime = 0;
     timeval pre, now;
-    gettimeofday(&pre,NULL);
-    int playnum;
-    int alive=-1;
+    gettimeofday(&pre, NULL);
+    int playernum;
+    int alive = -1;
     while (running) {
-        playernum=0;
-        alive=-1;
+        playernum = 0;
+        alive = -1;
         for (int i = 0; i < 10; i++) {
             if (!clienton[i])
                 continue;
             playernum++;
-            alive=i;
+            alive = i;
             if (dataqueue[i].empty())
                 continue;
-            pair<int,wstring> data = dataqueue[i].front();
+            pair<int, wstring> data = dataqueue[i].front();
             dataqueue[i].pop();
             switch (data.first) {
             case 1:
-                cout<<"플레이어"<<i+1<<"이 접속하였습니다."<<endl;
+                cout << "플레이어" << i + 1 << "이 접속하였습니다." << endl;
                 break;
-            case 2:
-                int idx = mt() % wordlen;
-                Write(2,words[idx],i);
+            case 2: {
+                int idx = (int)(mt() % wordlen);
+                Write(2, words[idx], i);
                 int target;
-                do
-                {
-                    target=mt()%10;
-                } while (!clienton[target]||target==i);
-                Write(1,data.second,target);
+                do {
+                    target = mt() % 10;
+                } while (!clienton[target] || target == i);
+                Write(1, data.second, target);
                 break;
+            }
             case 6:
                 ClientDisconnect(i);
                 break;
             }
         }
 
-        if(playernum<=1)
-        {
-            Write(6,L"우승",alive);
-            cout<<"플레이어"<<alive+1<<"이(가) 승리하였습니다!"<<endl;
-            cout<<"게임을 종료합니다."<<"endl;
+        if (playernum <= 1) {
+            Write(6, L"우승", alive);
+            cout << "플레이어" << alive + 1 << "이(가) 승리하였습니다!" << endl;
+            cout << "게임을 종료합니다." << endl;
             pthread_exit(NULL);
         }
 
-        gettimeofday(&now,NULL);
-        long second,usecond;
-        second=abs(now.tv_sec-pre.tv_sec);
-        usecond=now.tv_usec-pre.tv_usec;
-        int mtime=(second*1000+usecond/1000.0)+0.5;
-        if(mtime>=timestep)
-        {
+        gettimeofday(&now, NULL);
+        long second, usecond;
+        second = abs(now.tv_sec - pre.tv_sec);
+        usecond = now.tv_usec - pre.tv_usec;
+        int mtime = (second * 1000 + usecond / 1000.0) + 0.5;
+        if (mtime >= timestep) {
             int idx = mt() % wordlen;
-            for(int i=0;i<10;i++)
-            {
-                if(!clienton[i])
+            for (int i = 0; i < 10; i++) {
+                if (!clienton[i])
                     continue;
-                Write(1,words[idx],i);
+                Write(1, words[idx], i);
             }
-            totaltime+=mtime;
-            pre=now;
-            if(totaltime>=20000)
-            {
-                timestep-=timestep/10;
-                totaltime=0;
+            totaltime += mtime;
+            pre = now;
+            if (totaltime >= 20000) {
+                timestep -= timestep / 10;
+                totaltime = 0;
             }
         }
     }

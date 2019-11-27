@@ -34,10 +34,6 @@ void *Read(void *none) { // 서버로부터 단어 받아오기
             char ch = readbuffer[j++];
             if (ch == 101)
                 ch = 0;
-            uni += ch * 1000000;
-            ch = readbuffer[j++];
-            if (ch == 101)
-                ch = 0;
             uni += ch * 10000;
             ch = readbuffer[j++];
             if (ch == 101)
@@ -80,18 +76,15 @@ void Write(int tag, wstring str) { // 공격할 단어 서버로 전송
     writebuffer[0] = tag;
     int len = str.size();
     for (int i = 0; i < len; i++) {
-        writebuffer[i * 4 + 1] = (str[i] / 1000000) % 100;
-        writebuffer[i * 4 + 2] = (str[i] / 10000) % 100;
-        writebuffer[i * 4 + 3] = (str[i] / 100) % 100;
-        writebuffer[i * 4 + 4] = str[i] % 100;
-        if (writebuffer[i * 4 + 1] == 0)
-            writebuffer[i * 4 + 1] = 101;
-        if (writebuffer[i * 4 + 2] == 0)
-            writebuffer[i * 4 + 2] = 101;
-        if (writebuffer[i * 4 + 3] == 0)
-            writebuffer[i * 4 + 3] = 101;
-        if (writebuffer[i * 4 + 4] == 0)
-            writebuffer[i * 4 + 4] = 101;
+        writebuffer[i * 3 + 1] = (str[i] / 10000) % 100;
+        writebuffer[i * 3 + 2] = (str[i] / 100) % 100;
+        writebuffer[i * 3 + 3] = str[i] % 100;
+        if (writebuffer[i * 3 + 1] == 0)
+            writebuffer[i * 3 + 1] = 101;
+        if (writebuffer[i * 3 + 2] == 0)
+            writebuffer[i * 3 + 2] = 101;
+        if (writebuffer[i * 3 + 3] == 0)
+            writebuffer[i * 3 + 3] = 101;
     }
     int sendlen = send(serfd, writebuffer, 128, 0);
     if (sendlen < 0) {
