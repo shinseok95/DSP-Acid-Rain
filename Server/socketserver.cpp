@@ -26,7 +26,6 @@ void Disconnect(void* none);
 void Write(int tag, wstring str, int i);
 void* Read(void* index);
 void* DataProcess(void* none);
-bool awake = false;
 
 int main() {
     pid_t pid = 0;
@@ -121,25 +120,25 @@ int main() {
     pthread_create(&listenthread, NULL, ListenClient, NULL);
     pthread_detach(listenthread);
     string listenexit;
-    cout << "아무 문자열이나 입력 후 엔터를 눌러서 게임을 시작해주세요" << endl;
+    cout << "시작을 입력 후 엔터를 눌러서 게임을 시작해주세요" << endl;
     cin >> listenexit;
+    int playernum=0;
     for(int i=0;i<10;i++)
     {
         if(!clienton[i])
             continue;
+        playernum++;
         for(int j=0;j<5;j++)
         {
             int idx = mt() % wordlen;
             Write(2, words[idx],i);
         }
-    }
-
-    for(int i=0;i<10;i++)
-    {
-        if(!clienton[i])
-            continue;
         Write(7,L"시작",i);
     }
+
+    cout<<"게임을 시작합니다!"<<endl;
+    cout<<playernum<<"명의 플레이어가 게임에 참여했습니다."<<endl;
+    
     listening = false;
     pthread_cancel(listenthread);
     pthread_t mainthread;
@@ -191,6 +190,7 @@ void ClientDisconnect(int i) {
     pthread_cancel(readthread[i]);
     pthread_mutex_destroy(&writemutex[i]);
     clienton[i] = false;
+    cout<<"플레이어"<<i+1<<"이(가) 죽었습니다."<<endl;
     close(clientfd[i]);
 }
 
@@ -209,21 +209,18 @@ void Write(int tag, wstring str, int i)
         char writebuffer[128];
         memset(writebuffer,0,128);
         writebuffer[0]=tag;
-        int len=str.size();\
+        int len=str.size();
         for(int i=0;i<len;i++)
         {
-            writebuffer[i*4+1]=(str[i]/1000000)%100;
-            writebuffer[i*4+2]=(str[i]/10000)%100;
-            writebuffer[i*4+3]=(str[i]/100)%100;
-            writebuffer[i*4+4]=str[i]%100;
-            if(writebuffer[i*4+1]==0)
-                writebuffer[i*4+1]=101;
-            if(writebuffer[i*4+2]==0)
-                writebuffer[i*4+2]=101;
-            if(writebuffer[i*4+3]==0)
-                writebuffer[i*4+3]=101;
-            if(writebuffer[i*4+4]==0)
-                writebuffer[i*4+4]=101;
+            writebuffer[i*3+1]=(str[i]/10000)%100;
+            writebuffer[i*3+2]=(str[i]/100)%100;
+            writebuffer[i*3+3]=str[i]%100;
+            if(writebuffer[i*3+1]==0)
+                writebuffer[i*3+1]=101;
+            if(writebuffer[i*3+2]==0)
+                writebuffer[i*3+2]=101;
+            if(writebuffer[i*3+3]==0)
+                writebuffer[i*3+3]=101;
         }
         len=strlen(writebuffer);
         int sendlen = send(clientfd[i], writebuffer, 128, MSG_NOSIGNAL);
@@ -258,10 +255,6 @@ void* Read(void* index)
             char ch=readbuffer[i][j++];
             if(ch==101)
                 ch=0;
-            uni+=ch*1000000;
-            ch=readbuffer[i][j++];
-            if(ch==101)
-                ch=0;
             uni+=ch*10000;
             ch=readbuffer[i][j++];
             if(ch==101)
@@ -285,15 +278,24 @@ void* DataProcess(void *none) {
     long totaltime=0;
     timeval pre, now;
     gettimeofday(&pre,NULL);
+    int playnum;
+    int alive=-1;
     while (running) {
+        playernum=0;
+        alive=-1;
         for (int i = 0; i < 10; i++) {
             if (!clienton[i])
                 continue;
+            playernum++;
+            alive=i;
             if (dataqueue[i].empty())
                 continue;
             pair<int,wstring> data = dataqueue[i].front();
             dataqueue[i].pop();
             switch (data.first) {
+            case 1:
+                cout<<"플레이어"<<i+1<<"이 접속하였습니다."<<endl;
+                break;
             case 2:
                 int idx = mt() % wordlen;
                 Write(2,words[idx],i);
@@ -303,9 +305,21 @@ void* DataProcess(void *none) {
                     target=mt()%10;
                 } while (!clienton[target]||target==i);
                 Write(1,data.second,target);
-            break;
+                break;
+            case 6:
+                ClientDisconnect(i);
+                break;
             }
         }
+
+        if(playernum<=1)
+        {
+            Write(6,L"우승",alive);
+            cout<<"플레이어"<<alive+1<<"이(가) 승리하였습니다!"<<endl;
+            cout<<"게임을 종료합니다."<<"endl;
+            pthread_exit(NULL);
+        }
+
         gettimeofday(&now,NULL);
         long second,usecond;
         second=abs(now.tv_sec-pre.tv_sec);
