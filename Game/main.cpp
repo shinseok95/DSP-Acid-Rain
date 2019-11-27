@@ -19,6 +19,8 @@ int main() {
     pthread_create(&readthread, NULL, Read, NULL);
     pthread_detach(readthread);
 
+    Write(7,L"시작");
+
     while (wait) {
     }
 
@@ -143,6 +145,7 @@ int main() {
             0) { // HP가 0 이하가 될 경우 게임종료
             game.setResultImage(texture, sprite,
                                 false); // 패배 이미지 가져오기
+            Write(6,L"죽음");
             while (sectimer.getElapsedTime().asMilliseconds() < 5000) {
                 window.clear();
                 window.draw(sprite);
