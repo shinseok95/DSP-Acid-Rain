@@ -93,6 +93,8 @@ void Game::setServerWord(wstring word) {
 
 void Game::setAttackWord(wstring word) {
     Text newt(word, font, 27);
+    if(word.length() > 6)
+        newt.setCharacterSize(15);
     alist.push_back(newt);
 }
 
