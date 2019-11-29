@@ -16,14 +16,41 @@ char readbuffer[128];
 bool running = false;
 bool wait = true;
 
+int otherHP[10] = {
+    0,
+};
+int me;
+
 void *Read(void *none) { // 서버로부터 단어 받아오기
     while (running) {
         memset(readbuffer, 0, 128);
         int readlen = recv(serfd, readbuffer, 128, 0);
         if (readlen <= 0) {
             cout << "서버의 연결이 끊어졌습니다." << endl;
-            return NULL;
+            exit(-1);
         }
+
+        int tag = readbuffer[0];
+        if (tag == 3) {
+            for (int i = 0; i < 10; i++) {
+                if (i == me) {
+                    otherHP[i] = game.getPlayer().getPlayerHP();
+                } else {
+                    otherHP[i] = readbuffer[i + 1];
+                    if (otherHP[i] == 101)
+                        otherHP[i] = 0;
+                }
+            }
+            continue;
+        }
+
+        if (tag == 7) {
+            me = readbuffer[1];
+            cout << endl << "게임을 시작합니다!" << endl;
+            wait = false;
+            continue;
+        }
+
         int len = strlen(readbuffer);
         if (len == 0)
             continue;
@@ -46,7 +73,6 @@ void *Read(void *none) { // 서버로부터 단어 받아오기
 
             str += uni;
         }
-        int tag = readbuffer[0];
 
         switch (tag) {
         case 1:
@@ -60,11 +86,7 @@ void *Read(void *none) { // 서버로부터 단어 받아오기
         case 6:
             // 승리 신호
             game.setOver();
-            break;
-
-        case 7:
-            cout << endl << "게임을 시작합니다!" << endl;
-            wait = false;
+            pthread_exit(NULL);
             break;
         }
     }
@@ -74,21 +96,28 @@ void Write(int tag, wstring str) { // 공격할 단어 서버로 전송
     char writebuffer[128];
     memset(writebuffer, 0, 128);
     writebuffer[0] = tag;
-    int len = str.size();
-    for (int i = 0; i < len; i++) {
-        writebuffer[i * 3 + 1] = (str[i] / 10000) % 100;
-        writebuffer[i * 3 + 2] = (str[i] / 100) % 100;
-        writebuffer[i * 3 + 3] = str[i] % 100;
-        if (writebuffer[i * 3 + 1] == 0)
-            writebuffer[i * 3 + 1] = 101;
-        if (writebuffer[i * 3 + 2] == 0)
-            writebuffer[i * 3 + 2] = 101;
-        if (writebuffer[i * 3 + 3] == 0)
-            writebuffer[i * 3 + 3] = 101;
+    if (tag == 3) {
+        writebuffer[1] = game.getPlayer().getPlayerHP();
+        if (writebuffer[1] == 0)
+            writebuffer[1] = 101;
+    } else {
+        int len = str.size();
+        for (int i = 0; i < len; i++) {
+            writebuffer[i * 3 + 1] = (str[i] / 10000) % 100;
+            writebuffer[i * 3 + 2] = (str[i] / 100) % 100;
+            writebuffer[i * 3 + 3] = str[i] % 100;
+            if (writebuffer[i * 3 + 1] == 0)
+                writebuffer[i * 3 + 1] = 101;
+            if (writebuffer[i * 3 + 2] == 0)
+                writebuffer[i * 3 + 2] = 101;
+            if (writebuffer[i * 3 + 3] == 0)
+                writebuffer[i * 3 + 3] = 101;
+        }
     }
+
     int sendlen = send(serfd, writebuffer, 128, 0);
-    if (sendlen < 0) {
+    if (sendlen <= 0) {
         cout << "서버의 연결이 끊어졌습니다." << endl;
-        return;
+        exit(-1);
     }
 }

@@ -19,6 +19,7 @@ int main() {
     pthread_create(&readthread, NULL, Read, NULL);
     pthread_detach(readthread);
 
+    cout << "게임이 시작하기를 기다리고 있습니다..." << endl;
     Write(7, L"시작");
 
     while (wait) {
@@ -26,7 +27,7 @@ int main() {
 
     Clock clock;
     Clock sectimer;
-    RenderWindow window(VideoMode(1280, 720), L"Acid Rain Game");
+    RenderWindow window(VideoMode(1385, 720), L"Acid Rain Game");
     list<Text>::iterator iter;
 
     sf::Music music;
@@ -44,6 +45,9 @@ int main() {
     Vertex line1[2];
     Vertex line2[2];
     Vertex line3[2];
+    Vertex line4[2];
+    line4[0].position = {1280, 0};
+    line4[1].position = {1280, 720};
 
     /*HP Text*/
     Vertex HPtop[2];
@@ -56,6 +60,38 @@ int main() {
     /*HP Bar*/
     ConvexShape HPshape;
     ConvexShape HPbar;
+
+    ConvexShape ALLHP[10];
+    ConvexShape fullHP[10];
+
+    int p = 22;
+
+    for (int i = 0; i < 10; i++) {
+        fullHP[i].setFillColor(sf::Color(50, 50, 50));
+        ALLHP[i].setFillColor(sf::Color::Red);
+        fullHP[i].setPointCount(4);
+        ALLHP[i].setPointCount(4);
+        if (i % 2 == 0) {
+            fullHP[i].setPoint(0, sf::Vector2f(1295, p));
+            fullHP[i].setPoint(1, sf::Vector2f(1325, p));
+            fullHP[i].setPoint(2, sf::Vector2f(1325, p + 100));
+            fullHP[i].setPoint(3, sf::Vector2f(1295, p + 100));
+            ALLHP[i].setPoint(0, sf::Vector2f(1295, p));
+            ALLHP[i].setPoint(1, sf::Vector2f(1325, p));
+            ALLHP[i].setPoint(2, sf::Vector2f(1325, p + 100));
+            ALLHP[i].setPoint(3, sf::Vector2f(1295, p + 100));
+        } else {
+            fullHP[i].setPoint(0, sf::Vector2f(1340, p));
+            fullHP[i].setPoint(1, sf::Vector2f(1370, p));
+            fullHP[i].setPoint(2, sf::Vector2f(1370, p + 100));
+            fullHP[i].setPoint(3, sf::Vector2f(1340, p + 100));
+            ALLHP[i].setPoint(0, sf::Vector2f(1340, p));
+            ALLHP[i].setPoint(1, sf::Vector2f(1370, p));
+            ALLHP[i].setPoint(2, sf::Vector2f(1370, p + 100));
+            ALLHP[i].setPoint(3, sf::Vector2f(1340, p + 100));
+            p += 144;
+        }
+    }
 
     /*HP Text*/
     Text HPtitle;
@@ -73,6 +109,8 @@ int main() {
 
     // for (int i = 0; i < 10; i++)
     //     game.severAtk();
+
+    long totaltime = 0;
 
     while (window.isOpen()) { // 창 열림
         Event event;
@@ -101,6 +139,7 @@ int main() {
         window.draw(line1, 2, sf::Lines); // 라인 그리기
         window.draw(line2, 2, sf::Lines);
         window.draw(line3, 2, sf::Lines);
+        window.draw(line4, 2, sf::Lines);
         window.draw(HPtop, 2, sf::Lines); // HP 라인 그리기
         window.draw(HPmiddle, 2, sf::Lines);
 
@@ -120,6 +159,12 @@ int main() {
         //////////////////////////화면 갱신///////////////////////////////
         Time elapsed = clock.restart();
 
+        totaltime += elapsed.asMilliseconds();
+        if (totaltime >= 1000) {
+            Write(3, L"");
+            totaltime = 0;
+        }
+
         game.update(elapsed, game);
 
         /*-------- sendAtkWord(queue)에 단어가 존재하는 경우 -----------*/
@@ -135,6 +180,21 @@ int main() {
         HPbar.setPoint(
             1, sf::Vector2f(1250, 720 - game.getPlayer().getPlayerHP() * 3));
 
+        for (int i = 0; i < 10; i++) {
+            if (me == i) {
+                ALLHP[i].setFillColor(sf::Color::Yellow);
+                otherHP[i] = game.getPlayer().getPlayerHP();
+            }
+            ALLHP[i].setPoint(
+                0, sf::Vector2f(ALLHP[i].getPoint(3).x,
+                                ALLHP[i].getPoint(3).y - otherHP[i]));
+            ALLHP[i].setPoint(
+                1, sf::Vector2f(ALLHP[i].getPoint(2).x,
+                                ALLHP[i].getPoint(2).y - otherHP[i]));
+            window.draw(fullHP[i]);
+            window.draw(ALLHP[i]);
+        }
+
         window.draw(HPbar);
 
         /*----------------------게임 종료 요건----------------------*/
@@ -143,7 +203,9 @@ int main() {
             0) { // HP가 0 이하가 될 경우 게임종료
             game.setResultImage(texture, sprite,
                                 false); // 패배 이미지 가져오기
-            Write(6, L"사망");
+            Write(6, L"");
+            window.setSize(sf::Vector2u(1280, 720));
+            pthread_cancel(readthread);
             while (sectimer.getElapsedTime().asMilliseconds() < 5000) {
                 window.clear();
                 window.draw(sprite);

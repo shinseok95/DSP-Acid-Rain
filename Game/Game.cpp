@@ -93,7 +93,7 @@ void Game::setServerWord(wstring word) {
 
 void Game::setAttackWord(wstring word) {
     Text newt(word, font, 27);
-    if(word.length() > 6)
+    if (word.length() > 6)
         newt.setCharacterSize(15);
     alist.push_back(newt);
 }
@@ -119,7 +119,6 @@ void Game::update(Time elapsed, Game &game) {
 
             if (tlistIter->getPosition().y > 580) {
                 tlist.pop_front();
-
                 player->setPlayerHP(
                     -HP_MINUS_VALUE); // 단어가 바닥에 닿는 경우 HP -10
                 break;
@@ -192,7 +191,7 @@ void Game::setResultImage(Texture &texture, Sprite &sprite,
             exit(-1);
         }
         sprite.setTexture(texture);
-        sprite.setTextureRect(IntRect(-500, -250, 1280, 720));
+        sprite.setTextureRect(IntRect(-500, -250, 1385, 720));
 
     } else { // false일 때
 
@@ -202,7 +201,7 @@ void Game::setResultImage(Texture &texture, Sprite &sprite,
             exit(-1);
         }
         sprite.setTexture(texture);
-        sprite.setTextureRect(IntRect(-500, -250, 1280, 720));
+        sprite.setTextureRect(IntRect(-500, -250, 1385, 720));
     }
 }
 
