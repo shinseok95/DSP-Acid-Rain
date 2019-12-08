@@ -1,15 +1,21 @@
+##게임##
 
-1. g++ main.cpp -c
+1. 
+g++ main.cpp -c -std=c++11
 
-2. g++ main.o -o Acid-app -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio
+2. 
+g++ main.o -o game.out -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio -pthread -std=c++11
 
-3. ./Acid-app
+3. 
+./game.out
 
-** Acid-app 파일을 여는 경우,
+##서버##
 
-terminate called after throwing an instance of 'std::bad_alloc'
-  what():  std::bad_alloc
-Aborted (core dumped)
+1. 
+g++ socketserver.cpp -c -std=c++11
 
-라는 오류가 몇 번 발생하는데, 아마 저희가 찾지 못한 메모리 누수가 있어서 이러는 것 같습니다.
-그래도 여러번 ./Acid-app 하시면 게임이 열리니까, 계속 ./Acid-app을 치시면 됩니다.
+2. 
+g++ socketserver.o -o server.out -pthread -std=c++11
+
+3. 
+./server.out
