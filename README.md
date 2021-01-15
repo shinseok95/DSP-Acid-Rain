@@ -14,7 +14,9 @@ Text 기반으로 진행되는 게임을 감안하여, Loss에 안정적인 TCP�
 
 ## 게임 진행 영상
 
-[![Watch the video](https://img.youtube.com/vi/vR3zpz9m9CI/maxresdefault.jpg)](https://www.youtube.com/watch?v=vR3zpz9m9CI)
+[![Watch the video](https://img.youtube.com/vi/vR3zpz9m9CI/default.jpg)](https://www.youtube.com/watch?v=vR3zpz9m9CI)
+
+> 클릭시 재생됩니다.
 
 ## 개발 환경
 
